@@ -1,0 +1,95 @@
+#!/usr/bin/env python
+# -*- coding: utf8 -*-
+
+# Copyright (C) 2011  Matthias Müller-Reineke
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>
+
+
+from sys import argv
+from socket import gethostbyname, gaierror
+from os.path import join, basename
+from cStringIO import StringIO
+from time import time
+import tarfile
+
+from aslib.utilities import write
+
+from aslib.predefined import render_template, check_communicate,\
+         complete_file_description, TargetNotAvailable
+from aslib.process_hosts import hosts, classes_from_names
+
+
+target_dir = argv[1]
+names = basename(argv[2]).split('-')
+dist_name = names[0]
+names[0] = {'SL': 'Scientific'}.get(dist_name, dist_name)
+
+check_communicate('(bzr log --lim 1;bzr st;bzr di;bzr info)>'
+        + join(target_dir, 'dvd_version_info'))
+
+try:
+    # We don't need to know about virtualisation here because the
+    # Kickstart script detects it and reacts appropriate.
+    for host in hosts(lambda get_remote:
+            classes_from_names(names)):
+        host_name = host.name
+        def host_file_name(extension):
+            return join(target_dir, host_name + '.' + extension)
+        def host_file(extension, content):
+            write(host_file_name(extension), content)
+
+        dir_trees = host.trees()
+        dir_trees.add(host.name)
+        # Sort for reproduceable result:
+        overlay = list(dir_trees)
+        overlay.sort()
+        # We don't want to force anybody to provide an attribute ks:
+        try:
+            ks = host.search.ks
+        except AttributeError:
+            ks = None
+        try:
+            ip = gethostbyname(host_name)
+        except gaierror as e:
+            exit('{0}: {1}'.format(host_name, e[1]))
+        host_file('cfg', render_template('ks.cfg',
+                    ip=ip,
+                    inst_device=host.inst_device(),
+                    lv_filesystems=host.lv_filesystems(),
+                    overlay_instructions='cp $DVD/{0} $INST_ROOT/root\n'
+                    'cp $DVD/dvd_version_info $INST_ROOT/root\n'
+                    'chroot $INST_ROOT sh /root/{0}\n'
+                    .format(host_name + '.chrootsh') + '\n'.join(map(
+                            lambda x: 'overlay ' + x, overlay)),
+                    inst_media_dev=host.inst_media_dev,
+                    host_name=host_name,
+                    search=host.search,
+                    ks=ks
+                    ))
+
+        t = tarfile.open(host_file_name('tar'), 'a')
+        for file_path_name, content, manipulate in host.generated_files(
+                complete_file_description):
+            info = tarfile.TarInfo(file_path_name)
+            info.size = len(content)
+            info.mtime = time()
+            info.mode = manipulate.desired_mode
+            t.addfile(info, StringIO(content))
+        t.close()
+
+        host_file('chrootsh', 'set -e\n'
+                + '\n'.join(host.pre_overlay_commands()) + '\n')
+except TargetNotAvailable as e:
+    exit('{0}: {1}'.format(argv[0], e))

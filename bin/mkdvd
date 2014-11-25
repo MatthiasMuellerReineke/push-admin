@@ -1,0 +1,185 @@
+#!/bin/sh
+
+# Copyright (C) 2011  Matthias Müller-Reineke
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>
+
+
+set -e
+set -x
+
+DVD_RPM_DIR=CentOS
+REPODATA_DIR_DIR=
+COMPS_NAME=comps.xml
+
+. mkdvd.conf
+. common
+
+export PROJEKT_DIR=$(pwd)/
+if ! [ -d ${PROJEKT_DIR}trees ]
+then
+   echo 'There is no directory "trees" in the current working directory!'
+   exit 1
+fi
+
+### Obtain image for modification #########################################
+
+from_image()
+# Use this as CREATE_WORKING_COPY when you want to create an image
+# like the source image which only differs in the configuration tar
+# archives and kickstart files.
+{
+   # A working copy needs to be created because I didn't manage to get
+   # "genisoimage -graft-points ..." working (it consumes a great amount
+   # of system resources):
+   cp -a dvd working_copy
+   make_modifiable
+   basename $1
+}
+
+
+from_system()
+# Use this as CREATE_WORKING_COPY when you want to create a small image
+# which contains only the packages which are installed on the already
+# existing system REMOTE_SYSTEM. REMOTE_USER also needs to be set.
+{
+   REMOTE=$REMOTE_USER@$REMOTE_SYSTEM
+   our_stdout_must_be_redirected 1>&2
+   echo $(basename $1 .iso)-pkg-from-$REMOTE_SYSTEM.iso
+}
+
+### from_system's helpers ###
+
+dvd_cp()
+{
+cp -a dvd/$1 working_copy/$2
+}
+
+centos_exec()
+{
+ssh $REMOTE_AUTHORIZED_KEY $REMOTE "$@"
+}
+
+our_stdout_must_be_redirected()
+{
+PREP_DIR=/var/tmp/prepare_dvd_repo/$(date +%F)
+# Be aware that the following doesn't validate gpg signatures reliably!
+# See https://bugzilla.redhat.com/show_bug.cgi?id=998
+# "rpm --checksig $I" exits with 0 when the gpg signature is missing
+# (that isn't considered as an error).
+centos_exec 'set -e
+
+PACKAGES_DIR='$PREP_DIR/$DVD_RPM_DIR'
+if test -d $PACKAGES_DIR
+then
+   exit
+fi
+
+yumdownloader --destdir $PACKAGES_DIR\
+   $(yum list installed|tail --lines=+2|cut --delimiter='\'' '\'' --fields=1)
+
+for I in $PACKAGES_DIR/*
+do
+   rpm --checksig $I
+done'
+
+REPODATA=${REPODATA_DIR_DIR}repodata
+COMPS=$REPODATA/$COMPS_NAME
+centos_exec mkdir -p $PREP_DIR/$REPODATA
+remote_cp_1st_to_2nd dvd/$COMPS $REMOTE:$PREP_DIR/$COMPS
+centos_exec createrepo --database --groupfile repodata/$COMPS_NAME $PREP_DIR/$REPODATA_DIR_DIR
+remote_cp_1st_to_2nd -r $REMOTE:$PREP_DIR working_copy
+
+dvd_cp isolinux
+# When no CentOS DVD is available something like the following would
+# probably help (it was never executed).
+# Be aware that that software is not signed like the rpms we got above.
+#cd working_copy
+#mkdir isolinux
+#cd isolinux
+#for I in boot.cat boot.msg general.msg initrd.img isolinux.bin\
+#   isolinux.cfg memtest options.msg param.msg rescue.msg splash.lss vmlinuz
+#do
+#   wget http://ftp.hosteurope.de/mirror/centos.org/5/os/x86_64/isolinux/$I
+#done
+
+make_modifiable
+dvd_cp .discinfo
+dvd_cp images
+}
+
+
+### Misc functions ###
+
+make_modifiable()
+{
+# Our working copy must be modifiable for
+# our great features and deletable for the exit handler.
+chmod -R u+w $WORKING_COPY
+}
+
+
+### Modify the image ######################################################
+
+TMPDIR=$(mktemp -d)
+MOUNTPOINT=$TMPDIR/dvd
+trap\
+   "set +e; cd; sudo umount $MOUNTPOINT; make_modifiable; rm -rf $TMPDIR"\
+   EXIT
+mkdir $MOUNTPOINT
+sudo mount -o loop $ISOIMAGE $MOUNTPOINT
+WORKING_COPY=$TMPDIR/working_copy
+# As far as I remember, genisoimage requires this:
+cd $TMPDIR
+
+# CREATE_WORKING_COPY has to create working_copy which contains the files
+# and directories like the installation medium:
+ISO_NEW=$TMPDIR/Ks$(${CREATE_WORKING_COPY} $ISOIMAGE)
+
+
+dirs_2_tars()
+{
+for I in $1/*
+do
+   # A tar-archive's advantage is that it keeps permissions.
+   WAS=$(basename $I)
+   tar cf working_copy/${WAS}$2.tar -C $I .
+done
+}
+
+dirs_2_tars ${PROJEKT_DIR}trees
+dirs_2_tars $HOSTKEY_DIR _ssh
+
+cp -a $(adminadmin_package)/imvirt $WORKING_COPY
+DVD_VERSION_INFO=$WORKING_COPY/dvd_version_info
+(cd $PROJEKT_DIR&&mk_ks_cfg $WORKING_COPY $ISOIMAGE)
+echo "\n\n$0 parameter:\n$@">>$DVD_VERSION_INFO
+
+genisoimage -b isolinux/isolinux.bin -no-emul-boot -c isolinux/isolinux.cat -boot-load-size 4 -boot-info-table -J -R -v -T -o $ISO_NEW working_copy
+
+# Doesn't exist on Centos + EPEL.
+# That's the reason why this is made for Ubuntu:
+implantisomd5 --supported-iso $ISO_NEW
+
+# IMAGE_DEST should contain something which processes the image
+# (e.g. 'burn&cp $ISO_NEW ~/image_archive'):
+eval $IMAGE_DEST
+
+# Some indication for the last time the image did it's job correctly:
+LOG=~/.$(basename $0).log
+echo \
+'========================================================================'\
+>>$LOG
+date>>$LOG
+cat $DVD_VERSION_INFO>>$LOG

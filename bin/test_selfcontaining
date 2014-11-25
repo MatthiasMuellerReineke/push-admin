@@ -1,0 +1,91 @@
+#!/bin/bash
+
+# Copyright (C) 2011  Matthias Müller-Reineke
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>
+
+
+set -e
+. test_util
+
+NON_EXISTENT=doesntexist
+
+test_files()
+{
+   cd $(adminadmin_package)/test_sites/$1
+}
+
+(unset REMOTE_AUTHORIZED_KEY&&start_pyunit_test test_selfcontaining)
+
+dc()
+{
+   EXPECTED_EXIT_CODE=$1
+   shift
+   set +e
+   distribute_command "$@" true >/dev/null 2>&1
+   EXIT_CODE=$?
+   set -e
+   if [ $EXPECTED_EXIT_CODE != $EXIT_CODE ]
+   then
+      echo dc $@: EXPECTED_EXIT_CODE = $EXPECTED_EXIT_CODE,\
+           EXIT_CODE = $EXIT_CODE
+   fi
+}
+
+diff_correct_offline()
+{
+    diff_richtig "$NON_EXISTENT: $NON_EXISTENT is OFFLINE"
+}
+
+test_files test_files
+start_pyunit_test test_real_system
+distribute_command All true 2>&1|diff_correct_offline
+distribute_files 2>&1|diff_correct_offline
+dc 1 --skip=$NON_EXISTENT All
+
+test_files two_hosts
+dc 0 $NON_EXISTENT
+dc 1 doesntexis
+dc 0 --skip=$NON_EXISTENT All
+dc 1\
+ --skip=$NON_EXISTENT,host_from_cmd_line_must_not_be_considered_as_a_class\
+ All
+
+
+MK_KS_CFG_CMD="mk_ks_cfg $TMPDIR /x/yz/CentOS-5.4-x86_64-bin-DVD.iso"
+
+test_files host_tar
+$MK_KS_CFG_CMD
+SYS_ROOT=$TMPDIR/sys_root
+mkdir $SYS_ROOT
+tar xf $TMPDIR/$REAL_SYSTEM.tar -C $SYS_ROOT
+cat $SYS_ROOT/a/b/c/generated|diff_richtig 'generated via generated_files'
+
+# How does mk_ks_cfg cope with a missing DNS entry?
+# test_sites/host_tar/hosts.py evaluates REAL_SYSTEM.
+REAL_SYSTEM=$NON_EXISTENT $MK_KS_CFG_CMD 2>&1\
+            |grep -E \
+"^$NON_EXISTENT: (Temporary failure in name resolution|Name or service not known)$"\
+>/dev/null
+
+# Does remote's stderr occur on local stderr?
+STDERR_CONTENT=$TMPDIR/hi_stderr
+distribute_command $REAL_SYSTEM 'echo Hi 1>&2;false'\
+       2>$STDERR_CONTENT|diff_richtig "
+Destination: $REAL_SYSTEM"
+cat $STDERR_CONTENT|diff_richtig "Hi
+Command 'echo Hi 1>&2;false' returned non-zero exit status 1"
+
+# Is remote stdin connected with local stdin?
+echo|distribute_command $REAL_SYSTEM read >/dev/null

@@ -1,0 +1,34 @@
+#!/bin/bash
+# ^Is for telling vim to highlight this as shell script.
+
+# Copyright (C) 2011  Matthias Müller-Reineke
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>
+
+
+
+start_pyunit_test()
+{
+   $1.py --quiet
+}
+
+diff_richtig()
+{
+   diff <(cat <<DELIMITER
+$1
+DELIMITER) -
+}
+
+TMPDIR=$(mktemp -d)
+trap "rm -r $TMPDIR" EXIT

@@ -1,0 +1,58 @@
+#!/usr/bin/env python
+# -*- coding: utf8 -*-
+
+# Copyright (C) 2011  Matthias Müller-Reineke
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>
+
+
+from os import walk, stat
+from os.path import join
+from subprocess import check_call
+
+from aslib.utilities import object_from_option, tunix
+from aslib.predefined import site_dir, dir_of_tree, template_dir
+from aslib.process_hosts import process_relevant_hosts, DefaultAll,\
+         distribute_parser
+
+
+def list_walk(dir):
+    return list(walk(dir))
+
+
+files_with_non_standard_permissions = []
+for directory, dirs, files in list_walk(dir_of_tree('')) + list_walk(
+        join(site_dir(), template_dir)):
+    for name in files:
+        path = join(directory, name)
+        default_permissions = 0644
+        st_mode = stat(path).st_mode
+        if st_mode & 0666 != default_permissions:
+            files_with_non_standard_permissions.append(path)
+if files_with_non_standard_permissions:
+    exit('The files\n\n' + '\n'.join(files_with_non_standard_permissions)
+            + '\n\nhave permissions which are probably\n'
+            'not tracked by your revision control or they will probably\n'
+            'be insecure on the remote system!\n'
+            'Set them to 0{0:o}.'.format(default_permissions))
+
+
+object_from_option(distribute_parser, 'diffpdf',
+        lambda old, new: check_call(['diffpdf', old, new]), tunix,
+        'diffpdf')
+distribute_parser.add_argument('host_specification',
+        nargs='?', default='All')
+process_relevant_hosts(DefaultAll(),
+        lambda host, args: host.distribute_files_rsync(),
+        distribute_parser)

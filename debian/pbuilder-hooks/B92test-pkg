@@ -1,0 +1,21 @@
+#!/bin/sh
+# Derived from /usr/share/doc/pbuilder/examples/B92test-pkg .
+#
+# run tests. Current directory is top of source-code.
+#
+# 2005, 2007 Junichi Uekawa
+# 
+set -e 
+
+echo "Installing the prerequisites"
+# ignore the failures since they are not the prime interest
+for PKG in $(ls /tmp/buildd/*.deb | sed -e's,.*/,,;s,_.*,,' ); do
+    apt-get install -y --force-yes "$PKG" || true 
+    apt-get remove -y "$PKG" || true 
+done
+
+# install the single package, then try to satisfy dependencies.
+dpkg -i /tmp/buildd/*.deb || true
+apt-get install -y -f --force-yes
+
+test_selfcontaining

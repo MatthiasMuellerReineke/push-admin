@@ -1,0 +1,42 @@
+#!/bin/sh
+# ^ Make vim to highlight the syntax.
+
+# Copyright (C) 2011  Matthias Müller-Reineke
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>
+
+
+HOSTKEY_DIR=$HOME/ssh_keys
+
+arc_dir()
+{
+   echo $HOSTKEY_DIR/$1/ssh
+}
+
+
+ssh_exec()
+{
+    ssh $REMOTE_AUTHORIZED_KEY -l root "$@"
+}
+
+remote_cp_1st_to_2nd()
+{
+    scp $REMOTE_AUTHORIZED_KEY "$@"
+}
+
+ssh_exec_default()
+{
+    ssh_exec $DEFAULT_REMOTE_TARGET "$@"
+}
+DEFAULT_REMOTE_TARGET=$1
