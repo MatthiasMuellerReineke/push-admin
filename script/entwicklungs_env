@@ -1,0 +1,25 @@
+#!/bin/sh
+set -e
+
+PUSH_ADMIN_DIR=$1
+if [ "$PUSH_ADMIN_DIR" != "" ]
+then
+    cd $PUSH_ADMIN_DIR
+fi
+export PUSH_ADMIN_DIR=$(pwd)
+
+export PROJEKT_DIR=$PUSH_ADMIN_DIR/example-site
+export ISO_DIR=/var/cache/autoinstallation
+
+export PYTHONPATH=$PUSH_ADMIN_DIR
+export PATH=$PUSH_ADMIN_DIR/bin:$PROJEKT_DIR:$PATH
+
+export REAL_SYSTEM=centostest
+#export REMOTE_AUTHORIZED_KEY="-i $HOME/autoinstallation_id_rsa"
+
+# Abfrage damit exit-Code != 0 nicht diese Shell beendet:
+if $SHELL
+then
+   true
+fi
+echo Die Entwicklungsumgebung wurde beendet.
