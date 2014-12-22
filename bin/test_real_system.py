@@ -231,7 +231,8 @@ class TestCentosReal(TestCentos, unittest.TestCase):
         self.assertEqual(a, b)
 
     def test_get_remote(self):
-        self.assertEqual("""ext3
+        self.assertEqual("""ext4
+ext3
 ext2
 nodev proc
 nodev devpts
