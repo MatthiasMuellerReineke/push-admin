@@ -29,7 +29,7 @@ from os.path import join, lexists, isdir
 from cStringIO import StringIO
 import unittest
 
-from aslib.utilities import tunix, write, memoize
+from aslib.utilities import tunix, write, memoize, ensure_contains
 from aslib.os_objects import option_with_values, User, UsersGroups,\
          Packages,\
          Files, Link, Directory, NoManipulation, Make, ChangeGroup,\
@@ -258,6 +258,13 @@ class TestSimple(unittest.TestCase):
         # TODO: Make it possible to instantiate Make without parameter.
         Make(NoManipulation.desired_mode).execute_dry(
                 '/non_existing_dir', None)
+
+    def test_ensure_contains(self):
+        data = 'd'
+        name = join(on_exit_vanishing_dtemp(), 'a')
+        ensure_contains(name, data)
+        ensure_contains(name, data)
+        self.assertEqual(file_content(name), data)
 
     def test_write_written_data_is_immediately_available(self):
         data = 'x'

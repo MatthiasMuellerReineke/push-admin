@@ -21,7 +21,7 @@ from __future__ import print_function
 from os import rmdir, walk, remove, getcwd, rename, environ
 import socket
 import warnings
-from os.path import join, exists, basename, dirname
+from os.path import join, exists, basename, dirname, expanduser
 from tempfile import mkdtemp, TemporaryFile
 from sys import stdin, stdout, stderr, exc_info, modules
 from atexit import register
@@ -37,7 +37,8 @@ with warnings.catch_warnings():
     from paramiko import SSHClient, SFTPClient
 
 from utilities import memoized, memoize,\
-         on_exit_vanishing_dtemp, NoMkdir, colored
+         on_exit_vanishing_dtemp, NoMkdir, colored, file_content, mkdir_p,\
+         ensure_contains
 from remote_exec import ForwardToStd, CatchStdout, CatcherStderrMsg,\
          CatchStdoutCatcherStderrMsg,\
          ChanWrapper, StdinWrapper, process_ready_files
@@ -788,6 +789,12 @@ class All(ClassOfSystems):
         def umount():
             check_call(['fusermount', '-u', mount_point])
         register(umount)
+
+        remote_ssh_dir = join(mount_point, 'root/.ssh')
+        remote_authorized_keys = join(remote_ssh_dir, 'authorized_keys')
+        our_public_key = file_content(expanduser('~/.ssh/id_rsa.pub'))
+        mkdir_p(remote_ssh_dir)
+        ensure_contains(remote_authorized_keys, our_public_key)
 
         return mount_point
 

@@ -24,7 +24,7 @@ Dieser Code muss ohne das VWS funktionieren!"""
 from compiler.misc import mangle
 from functools import partial
 from os import makedirs
-from os.path import isdir
+from os.path import isdir, isfile
 from tempfile import mkdtemp
 import time
 from atexit import register
@@ -152,6 +152,12 @@ class TestRunner(unittest.TextTestRunner):
                 self.stream.write("errors=%d" % errored)
             self.stream.writeln(")")
         return result
+
+
+def ensure_contains(file_name, content):
+    if not isfile(file_name) or content not in file_content(file_name):
+        with open(file_name, 'a') as f:
+            f.write(content)
 
 
 def file_content(file_name):
