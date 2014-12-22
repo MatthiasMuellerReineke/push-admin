@@ -776,9 +776,10 @@ class All(ClassOfSystems):
 
         stderr_catcher = StderrCatcher()
         try:
-            # FIXME: ~/autoinstallation_id_rsa doesn't exist everywhere:
+            # FIXME: Either add "+ ' -o IdentityFile=...'" or remove
+            # $REMOTE_AUTHORIZED_KEY from the scripts:
             check_call(['bash', '-c', 'sshfs root@' + self.name + ':/ ' + mount_point
-                + ' -o IdentityFile=~/autoinstallation_id_rsa'],
+                ],
                 stderr=stderr_catcher.file)
         except CalledProcessError:
             raise Offline(self)
