@@ -257,7 +257,8 @@ hfsplus
         # In the case of insufficient quoting the shell command below
         # yields the name of the local system instead of the remote one.
         s = self.system_object
-        self.ssh_silent_stdout('false||hostname --short', s.name)
+        self.ssh_silent_stdout('false||hostname --short',
+                s.name.split('.')[0])
 
     def test_ssh_silent_stdout_single_quotes(self):
         self.ssh_silent_stdout("echo '$A'", '$A')
