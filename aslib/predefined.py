@@ -729,8 +729,7 @@ class All(ClassOfSystems):
         if c:
              return c
         c = SSHClient()
-        c.load_system_host_keys('/etc/ssh/ssh_known_hosts')
-
+        c.load_system_host_keys()
         # XXX: Discovery of the identity file isn't covered
         # by regression tests:
         try:
