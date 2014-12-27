@@ -30,6 +30,7 @@ from cStringIO import StringIO
 import unittest
 
 from aslib.utilities import tunix, write, memoize, ensure_contains
+from aslib.remote_exec import MatchBuffer
 from aslib.os_objects import option_with_values, User, UsersGroups,\
          Packages,\
          Files, Link, Directory, NoManipulation, Make, ChangeGroup,\
@@ -63,6 +64,38 @@ from aslib.test_util import file_content, write_file, RunModeMock,\
 
 shall_i_process_host = ShallIProcessHost()
 packagemanagers_install_cmd = Packages.packagemanagers_install_cmd
+
+
+class TestMatchBuffer(unittest.TestCase):
+    to_be_matched = 'cx'
+
+    def test_returns_non_matching(self):
+        val = 'b'
+        self.execute_one_buffer_value(val, val)        
+
+    def test_returns_non_matching_twice(self):
+        val = 'b'
+        self.execute_one_buffer_value(val + self.to_be_matched + val,
+                val * 2)        
+
+    def test_match_reset(self):
+        self.execute_one_buffer_value('ca' + self.to_be_matched, 'ca')
+
+    def test_filters_matching(self):
+        expected_result = 'd'
+        self.execute_one_buffer_value(
+                expected_result + self.to_be_matched, expected_result)
+
+    def execute_one_buffer_value(self, value, expected_result):
+        self.assertEqual(
+                MatchBuffer(self.to_be_matched).buffer_value(value),
+            expected_result)
+
+    def test_two_buffer_values(self):
+        mb = MatchBuffer(self.to_be_matched)
+        v1 = mb.buffer_value('abc')
+        v2 = mb.buffer_value('xde')
+        self.assertEqual(v1 + v2, 'abde')
 
 
 class TestPackageNameMapping(unittest.TestCase):

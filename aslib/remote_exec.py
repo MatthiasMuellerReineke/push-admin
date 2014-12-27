@@ -76,11 +76,31 @@ class CatchStdout(CatchSomeOutput):
 
 class CatcherStderrMsg(CatchSomeOutput):
     def __init__(self, msg):
-        self.__msg = msg
+        self.__buffer = MatchBuffer(msg + '\n')
 
     def take_stderr(self, s):
-        if s != self.__msg + '\n':
-            stderr.write(s)
+        stderr.write(self.__buffer.buffer_value(s))
+
+
+class MatchBuffer:
+    def __init__(self, to_be_matched):
+        self.to_be_matched = to_be_matched
+        self.to_be_matched_pos = 0
+        self.values = ''
+
+    def buffer_value(self, value):
+        ret = ''
+        self.values += value
+        for c in self.values:
+            if c == self.to_be_matched[self.to_be_matched_pos]:
+                self.to_be_matched_pos += 1
+                if self.to_be_matched_pos >= len(self.to_be_matched):
+                    self.to_be_matched_pos = 0
+            else:
+                ret += self.to_be_matched[:self.to_be_matched_pos] + c
+                self.to_be_matched_pos = 0
+        self.values = ''
+        return ret
 
 
 class CatchStdoutCatcherStderrMsg(CatchStdout, CatcherStderrMsg):

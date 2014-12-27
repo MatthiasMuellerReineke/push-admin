@@ -39,7 +39,7 @@ with warnings.catch_warnings():
 from utilities import memoized, memoize,\
          on_exit_vanishing_dtemp, NoMkdir, colored, file_content, mkdir_p,\
          ensure_contains
-from remote_exec import ForwardToStd, CatchStdout, CatcherStderrMsg,\
+from remote_exec import ForwardToStd, CatchStdout,\
          CatchStdoutCatcherStderrMsg,\
          ChanWrapper, StdinWrapper, process_ready_files
 from os_objects import Packages, User, UsersGroups, Group,\
@@ -89,8 +89,14 @@ def link_in_same_dir(target, name):
 class MakeOwnedRecursivelyBy(SimpleConditionalCommand):
     def no_commands_required(self, filesystem_object):
         name = self.names
+        # If this is executed although the user doesn't exist yet, find
+        # issues an error message like the following. It is suited to
+        # certain versions of find and a testcase,
+        # so it isn't sure that it is suppressed.
+        # I'm uncertain whether it should be suppressed during
+        # productive use because it never occured in practice.
         c = CatchStdoutCatcherStderrMsg(
-                "find: invalid argument `test_useradd' to `-user'")
+                "find: `test_useradd' is not the name of a known user")
         try:
             self.system_object.ssh_silent(
                     r'find $({0}) \! -user {1} -o \! -group {1}'.format(
