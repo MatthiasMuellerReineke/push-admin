@@ -398,6 +398,10 @@ class VMware(FromExaminationOfSystem):
     pass
 
 
+class VirtualBox(FromExaminationOfSystem):
+    pass
+
+
 class RearBackup(Override):
     """The package "rear" can't be included into the packages section of
        the kickstart file for an original Redhat DVD because it doesn't

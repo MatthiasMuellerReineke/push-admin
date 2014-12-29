@@ -31,7 +31,8 @@ from aslib.os_objects import option_with_values,\
 from aslib.predefined import All, check_communicate, non_existent,\
          Override, Service, MakeOwnedRecursivelyBy, dir_of_tree
 from aslib import process_hosts
-from aslib.process_hosts import RealRun, DryRun
+from aslib.process_hosts import RealRun, DryRun,\
+        classes_from_examination_of_running_system
 
 from aslib import test_util
 from aslib.test_util import RunModeMock, on_exit_vanishing_dtemp,\
@@ -297,6 +298,11 @@ class TestSimple(unittest.TestCase):
     def test_remote_dtemp(self):
         # Does remote_dtemp return any value?
         self.assertTrue(initialized_all_dry().remote_dtemp())
+
+    def test_override_classes_from_examination_of_system(self):
+        # Does it raise an exception? It shouldn't
+        system_object = All(environ['REAL_SYSTEM'], DryRun)
+        classes_from_examination_of_running_system(system_object)
 
 
 ### utilities ###
