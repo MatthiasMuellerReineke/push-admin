@@ -1037,7 +1037,7 @@ class TestNonExistentAll(unittest.TestCase):
                 self.host.override_instances_from_examination_of_system)
 
     def test_connection_failure_direct_ssh(self):
-        self.assertRaises(Offline, self.host.ssh, '', 'true')
+        self.assertRaises(Offline, self.host.ssh, 'true')
 
     def test_shall_i_process_host(self):
         self.assertTrue(shall_i_process_host(non_existent, self.host))
