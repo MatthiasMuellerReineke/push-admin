@@ -30,7 +30,8 @@ from cStringIO import StringIO
 import unittest
 
 from aslib.utilities import tunix, write, memoize, ensure_contains
-from aslib.remote_exec import MatchBuffer
+from aslib.remote_exec import MatchBuffer, StdWrapper,\
+        AlwaysPrintDestination
 from aslib.os_objects import option_with_values, User, UsersGroups,\
          Packages,\
          Files, Link, Directory, NoManipulation, Make, ChangeGroup,\
@@ -677,6 +678,25 @@ class TestSimple(unittest.TestCase):
         self.assertEqual(out.getvalue(), expected)
 
     diff_pdf_file_name = 'x.pdf'
+
+    def test_forward_to_standard(self):
+        class HasRead:
+            def read(self):
+                return ''
+
+        class HasPrintDest:
+            def print_dest(self):
+                pass
+
+        ap = AlwaysPrintDestination(HasPrintDest())
+        sw = StdWrapper(HasRead(), ap, ap.take_stdout)
+        peculiarities = ap.peculiarities()
+        peculiarities.save_settings()
+        try:
+            sw.process()
+            sw.process()
+        finally:
+            peculiarities.reset_settings()
 
     def test_memoize(self):
         b_ret = 13469

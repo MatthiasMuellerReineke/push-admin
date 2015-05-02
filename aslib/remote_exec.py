@@ -18,6 +18,7 @@
 
 import select
 from sys import stdin, stderr, stdout
+from subprocess import PIPE
 import tty
 import termios
 
@@ -25,21 +26,24 @@ from utilities import tunix
 
 
 class ForwardToStd:
+    allocate_tty = []
+    remotes_stdout = PIPE
+
     def __init__(self, host=None):
         self.host = host
+        self.tty = Tty()
 
     def take_stdout(self, s, peculiarities):
         stdout.write(s)
         # flush makes questions appearing reliably:
         stdout.flush()
 
-    def take_stderr(self, s):
+    def take_stderr(self, s, peculiarities):
         stderr.write(s)
 
-    def peculiarities(self, chan):
+    def peculiarities(self):
         if stderr.isatty():
-            chan.get_pty()
-            return Tty()
+            return self.tty
         else:
             return NoTty()
 
@@ -62,7 +66,7 @@ class PrintDestinationForOutput(AlwaysPrintDestination):
 
 
 class CatchSomeOutput(ForwardToStd):
-    def peculiarities(self, chan):
+    def peculiarities(self):
         return NoTty()
 
 
@@ -78,7 +82,7 @@ class CatcherStderrMsg(CatchSomeOutput):
     def __init__(self, msg):
         self.__buffer = MatchBuffer(msg + '\n')
 
-    def take_stderr(self, s):
+    def take_stderr(self, s, peculiarities):
         stderr.write(self.__buffer.buffer_value(s))
 
 
@@ -121,15 +125,16 @@ class SelectableWrapper:
 
 class FileWrapper(SelectableWrapper):
     """
-    This forwards a file's content to the remote program via Paramiko.
+    This forwards a file's content to the remote program via ssh.
     """
 
     def __init__(self, f):
         self.selectable = f
+        self.remotes_stdin = PIPE
 
     def process(self):
-        self.chan.send(self.selectable.read())
-        self.chan.shutdown_write()
+        self.chan.write(self.selectable.read())
+        self.chan.close()
         self.eof = True
 
     def append_to_always_ready(self, always_ready):
@@ -141,11 +146,12 @@ class FileWrapper(SelectableWrapper):
 
 class StdinWrapper(SelectableWrapper):
     selectable = stdin
+    remotes_stdin = PIPE
 
     def process(self):
-        r = stdin.read(1)
+        r = stdin.read()
         if r:
-            self.chan.send(r)
+            self.chan.write(r)
         self.eof = not r
 
     def append_to_always_ready(self, always_ready):
@@ -155,37 +161,29 @@ class StdinWrapper(SelectableWrapper):
         all_selectables.append(self)
 
 
-class ChanWrapper(SelectableWrapper):
+class StdWrapper(SelectableWrapper):
     """
     This recives remote program's output.
     """
-    def __init__(self, chan, output_catcher, peculiarities):
-        self.chan = chan
-        self.output_catcher = output_catcher
+
+    def __init__(self, chan, output_catcher, take):
         self.selectable = chan
-        self.peculiarities = peculiarities
+        self.output_catcher = output_catcher
+        self.take = take
 
     def process(self):
-        chan = self.chan
-        s_out = copy_from_chan(chan.recv_ready, chan.recv)
-        output_catcher = self.output_catcher
-        output_catcher.take_stdout(s_out, self.peculiarities)
-        s_err = copy_from_chan(chan.recv_stderr_ready, chan.recv_stderr)
-        output_catcher.take_stderr(s_err)
-        self.eof = not (s_out or s_err)
+        out = self.selectable.read()
+        self.take(out, self.output_catcher.peculiarities())
+        self.eof = not out
 
-
-def copy_from_chan(recv_ready, recv):
-    if recv_ready():
-        return recv(1024)
-    else:
-        return ''
+    def fileno(self):
+        return self.selectable.fileno()
 
 
 def process_ready_files(all_selectables, always_ready, *timeout):
     ready_for_reading, w, e = select.select(all_selectables,
             [], [], *timeout)
-    for r in ready_for_reading + always_ready:
+    for r in ready_for_reading + [o for o in always_ready if not o.eof]:
         r.process()
     return ready_for_reading
 
@@ -208,4 +206,3 @@ class Tty:
 
     def reset_settings(self):
         termios.tcsetattr(self.f, termios.TCSADRAIN, self.oldtty)
-

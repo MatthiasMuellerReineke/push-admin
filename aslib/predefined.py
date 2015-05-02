@@ -27,21 +27,16 @@ from sys import stdin, stdout, stderr, exc_info, modules
 from atexit import register
 from glob import glob
 import filecmp
-from subprocess import check_call, Popen, PIPE, CalledProcessError
+from subprocess import check_call, Popen, CalledProcessError
 
 from jinja2 import Environment, FileSystemLoader
-
-with warnings.catch_warnings():
-    # TODO: This should be narrowed:
-    warnings.simplefilter("ignore")
-    from paramiko import SSHClient, SFTPClient
 
 from utilities import memoized, memoize,\
          on_exit_vanishing_dtemp, NoMkdir, colored, file_content, mkdir_p,\
          ensure_contains
 from remote_exec import ForwardToStd, CatchStdout,\
          CatchStdoutCatcherStderrMsg,\
-         ChanWrapper, StdinWrapper, process_ready_files
+         StdWrapper, StdinWrapper, process_ready_files
 from os_objects import Packages, User, UsersGroups, Group,\
          Service, Link, Directory, Files,\
          commands_from_instances, SimpleConditionalCommand,\
@@ -418,7 +413,7 @@ class All(ClassOfSystems):
         self.override = override
 
         self.search = Search(self)
-        self.sshclient = None
+        self.ssh_master_socket = None
 
         # memoizing self.remote_root makes this program four times faster.
         # Doing it this way takes also effect on a overloaded remote_root.
@@ -704,65 +699,48 @@ class All(ClassOfSystems):
 
     def ssh(self, cmd, output_catcher=ForwardToStd(),
             remotes_stdin=StdinWrapper()):
-        c = self.ssh_connection()
-        chan = c.get_transport().open_session()
-        peculiarities = output_catcher.peculiarities(chan)
-        chan.exec_command(cmd)
-        output_chan_wrapper = ChanWrapper(chan, output_catcher,
-                peculiarities)
-        all_selectables = [output_chan_wrapper]
+        ssh_master_socket = self.ssh_master_socket
+        if not ssh_master_socket:
+            ssh_master_socket = join(on_exit_vanishing_dtemp(), 'socket')
+            self.ssh_master_socket = ssh_master_socket
+            self.master_openssh = self.openssh(['-M', '-N'], [])
+        peculiarities = output_catcher.peculiarities()
+        cmd_openssh = self.openssh(output_catcher.allocate_tty, [cmd],
+                remotes_stdin.remotes_stdin, output_catcher.remotes_stdout)
+ 
+        all_selectables = [
+                StdWrapper(cmd_openssh.stdout, output_catcher,
+                    output_catcher.take_stdout),
+                StdWrapper(cmd_openssh.stderr, output_catcher,
+                    output_catcher.take_stderr),
+            ]
         always_ready = []
-        remotes_stdin.chan = chan
+        remotes_stdin.chan = cmd_openssh.stdin
         remotes_stdin.append_to_always_ready(always_ready)
         remotes_stdin.append_to_selectables(all_selectables)
         peculiarities.save_settings()
         try:
             peculiarities.manipulate_settings()
+            exit_code = None
             while not all([o.eof for o in all_selectables + always_ready]):
                 if any([not o.eof for o in always_ready]):
                     process_ready_files(all_selectables, always_ready, 0)
                 else:
                     process_ready_files(all_selectables, always_ready)
-                if chan.exit_status_ready():
-                    while not output_chan_wrapper.eof:
-                        process_ready_files(all_selectables, [])
-                    # This is required, because stdin doesn't reach EOF.
+                if self.master_openssh.poll() == 255:
+                    raise Offline(self)
+                exit_code = cmd_openssh.poll()
+                if exit_code:
+                    raise CalledProcessError(exit_code, cmd)
+                if exit_code == 0:
                     break
-            exit_code = chan.recv_exit_status()
-            if exit_code:
-                raise CalledProcessError(exit_code, cmd)
         finally:
             peculiarities.reset_settings()
 
-    def ssh_connection(self):
-        c = self.sshclient
-        if c:
-             return c
-        c = SSHClient()
-        c.load_system_host_keys()
-        # XXX: Discovery of the identity file isn't covered
-        # by regression tests:
-        try:
-            remote_authorized_key = environ['REMOTE_AUTHORIZED_KEY']
-        except KeyError:
-            key_filename = None
-        else:
-            # Pos 0 is '-i', pos 1 is the path to the key:
-            key_filename = remote_authorized_key.split()[1]
-
-        try:
-            c.connect(self.name, username='root',
-                key_filename=key_filename)
-        except socket.error:
-            raise Offline(self)
-        finally:
-            # Without this messages like this 'Exception in thread
-            # Thread-14 (most likely raised during interpreter shutdown)'
-            # are issued:
-            register(c.close)
-# key_filename=os.path.expanduser('/etc/ssh/ssh_known_hosts'))
-        self.sshclient = c
-        return c
+    def openssh(self, options, cmd, stdin=None, stdout=None):
+        return Popen(['ssh', '-l', 'root'] + options
+                + ['-S', self.ssh_master_socket, self.name]
+                + cmd, stdin=stdin, stdout=stdout, stderr=stdout)
 
     def print_dest(self):
 # XXX: Muss in rcmd, rsync und search_for_output verwendet werden!
