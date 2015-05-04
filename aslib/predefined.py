@@ -22,6 +22,7 @@ from os import rmdir, walk, remove, getcwd, rename, environ
 import socket
 import warnings
 from os.path import join, exists, basename, dirname, expanduser
+from time import sleep
 from tempfile import mkdtemp, TemporaryFile
 from sys import stdin, stdout, stderr, exc_info, modules
 from atexit import register
@@ -699,11 +700,18 @@ class All(ClassOfSystems):
 
     def ssh(self, cmd, output_catcher=ForwardToStd(),
             remotes_stdin=StdinWrapper()):
+        def assert_master_openssh_running():
+            if self.master_openssh.poll() == 255:
+                raise Offline(self)
+
         ssh_master_socket = self.ssh_master_socket
         if not ssh_master_socket:
             ssh_master_socket = join(on_exit_vanishing_dtemp(), 'socket')
             self.ssh_master_socket = ssh_master_socket
             self.master_openssh = self.openssh(['-M', '-N'], [])
+            # Wait for termination in the case the target is not available:
+            sleep(0.1) # XXX race condition!
+            assert_master_openssh_running()
         peculiarities = output_catcher.peculiarities()
         cmd_openssh = self.openssh(output_catcher.allocate_tty, [cmd],
                 remotes_stdin.remotes_stdin, output_catcher.remotes_stdout)
@@ -727,8 +735,7 @@ class All(ClassOfSystems):
                     process_ready_files(all_selectables, always_ready, 0)
                 else:
                     process_ready_files(all_selectables, always_ready)
-                if self.master_openssh.poll() == 255:
-                    raise Offline(self)
+                assert_master_openssh_running()
                 exit_code = cmd_openssh.poll()
                 if exit_code:
                     raise CalledProcessError(exit_code, cmd)
