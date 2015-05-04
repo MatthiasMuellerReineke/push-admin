@@ -718,6 +718,7 @@ class All(ClassOfSystems):
                 # not available:
                 while True:
                     if inotifyx.get_events(fd, 0.1):
+                        register(self.master_openssh.kill)
                         break
                     assert_master_openssh_running()
             finally:
