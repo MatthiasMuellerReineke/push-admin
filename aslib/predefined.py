@@ -18,11 +18,11 @@
 
 from __future__ import print_function
 
+import os
 from os import rmdir, walk, remove, getcwd, rename, environ
 import socket
 import warnings
 from os.path import join, exists, basename, dirname, expanduser
-from time import sleep
 from tempfile import mkdtemp, TemporaryFile
 from sys import stdin, stdout, stderr, exc_info, modules
 from atexit import register
@@ -30,6 +30,7 @@ from glob import glob
 import filecmp
 from subprocess import check_call, Popen, CalledProcessError
 
+import inotifyx
 from jinja2 import Environment, FileSystemLoader
 
 from utilities import memoized, memoize,\
@@ -706,12 +707,21 @@ class All(ClassOfSystems):
 
         ssh_master_socket = self.ssh_master_socket
         if not ssh_master_socket:
-            ssh_master_socket = join(on_exit_vanishing_dtemp(), 'socket')
+            ssh_master_socket_dir = on_exit_vanishing_dtemp()
+            ssh_master_socket = join(ssh_master_socket_dir, 'socket')
             self.ssh_master_socket = ssh_master_socket
-            self.master_openssh = self.openssh(['-M', '-N'], [])
-            # Wait for termination in the case the target is not available:
-            sleep(0.1) # XXX race condition!
-            assert_master_openssh_running()
+            fd = inotifyx.init()
+            try:
+                wd = inotifyx.add_watch(fd, ssh_master_socket_dir)
+                self.master_openssh = self.openssh(['-M', '-N'], [])
+                # Wait for termination in the case the target is
+                # not available:
+                while True:
+                    if inotifyx.get_events(fd, 0.1):
+                        break
+                    assert_master_openssh_running()
+            finally:
+                os.close(fd)
         peculiarities = output_catcher.peculiarities()
         cmd_openssh = self.openssh(output_catcher.allocate_tty, [cmd],
                 remotes_stdin.remotes_stdin, output_catcher.remotes_stdout)
