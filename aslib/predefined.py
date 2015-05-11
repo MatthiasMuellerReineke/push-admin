@@ -35,7 +35,7 @@ from jinja2 import Environment, FileSystemLoader
 
 from utilities import memoized, memoize,\
          on_exit_vanishing_dtemp, NoMkdir, colored, file_content, mkdir_p,\
-         ensure_contains
+         ensure_contains, tunix
 from remote_exec import ForwardToStd, CatchStdout,\
          CatchStdoutCatcherStderrMsg,\
          StdWrapper, StdinWrapper, process_ready_files
@@ -766,6 +766,7 @@ class All(ClassOfSystems):
         print(colored(output, '\nDestination: '
                     + colored(output, self.name, attrs=['bold']),
                     on_color='on_green'), file=output)
+        self.print_dest = tunix
 
     def remote_dtemp(self):
         return convert_exception_to_targetnotavailable(

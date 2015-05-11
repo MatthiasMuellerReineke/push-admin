@@ -679,6 +679,17 @@ class TestSimple(unittest.TestCase):
 
     diff_pdf_file_name = 'x.pdf'
 
+    def test_print_dest_prints_once_per_host(self):
+        output = StringIO()
+        def print_dest():
+            h.print_dest()
+            return output.getvalue()
+
+        h = All(non_existent)
+        h.output = output
+        out1 = print_dest()
+        self.assertEqual(out1, print_dest())
+
     def test_forward_to_standard(self):
         class HasRead:
             def read(self):

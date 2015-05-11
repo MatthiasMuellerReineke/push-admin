@@ -54,9 +54,7 @@ class AlwaysPrintDestination(ForwardToStd):
         self.host.print_dest()
         peculiarities.manipulate_settings()
 
-        real_take_stdout = ForwardToStd().take_stdout
-        real_take_stdout(s, peculiarities)
-        self.take_stdout = real_take_stdout
+        ForwardToStd.take_stdout(self, s, peculiarities)
 
 
 class PrintDestinationForOutput(AlwaysPrintDestination):
