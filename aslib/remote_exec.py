@@ -34,11 +34,13 @@ class ForwardToStd:
         self.tty = Tty()
 
     def take_stdout(self, s, peculiarities):
+        self.pre_output(s, peculiarities)
         stdout.write(s)
         # flush makes questions appearing reliably:
         stdout.flush()
 
     def take_stderr(self, s, peculiarities):
+        self.pre_output(s, peculiarities)
         stderr.write(s)
 
     def peculiarities(self):
@@ -47,20 +49,22 @@ class ForwardToStd:
         else:
             return NoTty()
 
+    pre_output = tunix
+
 
 class AlwaysPrintDestination(ForwardToStd):
-    def take_stdout(self, s, peculiarities):
+    def print_dest(self, s, peculiarities):
         peculiarities.reset_settings()
         self.host.print_dest()
         peculiarities.manipulate_settings()
 
-        ForwardToStd.take_stdout(self, s, peculiarities)
+    pre_output = print_dest
 
 
 class PrintDestinationForOutput(AlwaysPrintDestination):
-    def take_stdout(self, s, peculiarities):
+    def pre_output(self, s, peculiarities):
         if s:
-             AlwaysPrintDestination.take_stdout(self, s, peculiarities)
+             self.print_dest(s, peculiarities)
 
 
 class CatchSomeOutput(ForwardToStd):

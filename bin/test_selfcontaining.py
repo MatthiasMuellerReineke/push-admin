@@ -31,7 +31,7 @@ import unittest
 
 from aslib.utilities import tunix, write, memoize, ensure_contains
 from aslib.remote_exec import MatchBuffer, StdWrapper,\
-        AlwaysPrintDestination
+        AlwaysPrintDestination, PrintDestinationForOutput, NoTty
 from aslib.os_objects import option_with_values, User, UsersGroups,\
          Packages,\
          Files, Link, Directory, NoManipulation, Make, ChangeGroup,\
@@ -42,6 +42,7 @@ from aslib.predefined import All, Override, RearBackup, Offline, El,\
          Debianish, DontTouch, hosts_with_class,\
          in_rcd_initd, link_in_same_dir, dir_of_tree,\
          NotSubclassOfFromExaminationOfSystem, FromExaminationOfSystem
+from aslib import remote_exec
 from aslib import predefined
 
 hosts_file_name = join(environ['PUSH_ADMIN_DIR'],
@@ -97,6 +98,53 @@ class TestMatchBuffer(unittest.TestCase):
         v1 = mb.buffer_value('abc')
         v2 = mb.buffer_value('xde')
         self.assertEqual(v1 + v2, 'abde')
+
+
+class TestPrintDestinationForOutput(unittest.TestCase):
+    manipulated = ('stdout', 'stderr')
+
+    def setUp(self):
+        self.saved = []
+        for i in self.manipulated:
+            self.saved.append(getattr(remote_exec, i))
+            setattr(remote_exec, i, StringIO())
+
+    def tearDown(self):
+        for manipulated, saved in zip(self.manipulated, self.saved):
+            setattr(remote_exec, manipulated, saved)
+
+    def test_nothing_used(self):
+        self.execute(tunix, 0)
+
+    def test_stdout_used(self):
+        self.execute(lambda forward:
+                self.call_take_val(forward.take_stdout))
+
+    def test_stderr_used(self):
+        self.execute(lambda forward:
+                self.call_take_val(forward.take_stderr))
+
+    def call_take_val(self, take):
+        self.call_take(take, 'x')
+
+    def call_take(self, take, val=''):
+        take(val, NoTty())
+
+    def execute(self, execute, expected_calls=1):
+        class AllMock:
+            calls = 0
+            def print_dest(self):
+                self.calls += 1
+
+        am = AllMock()
+        forward = PrintDestinationForOutput(am)
+        execute(forward)
+        # They are at least called once with an empty string
+        # in productive use:
+        self.call_take(forward.take_stdout)
+        self.call_take(forward.take_stderr)
+
+        self.assertEqual(am.calls, expected_calls)
 
 
 class TestPackageNameMapping(unittest.TestCase):
