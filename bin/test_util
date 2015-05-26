@@ -23,11 +23,14 @@ start_pyunit_test()
    $1.py --quiet
 }
 
+#diff()
+#{
+#    gvimdiff <(hexdump -C $1) <(hexdump -C <(cat))
+#}
+
 diff_richtig()
 {
-   diff <(cat <<DELIMITER
-$1
-DELIMITER) -
+   diff <(echo -e "$1") -
 }
 
 TMPDIR=$(mktemp -d)

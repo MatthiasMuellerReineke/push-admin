@@ -713,7 +713,8 @@ class All(ClassOfSystems):
             fd = inotifyx.init()
             try:
                 wd = inotifyx.add_watch(fd, ssh_master_socket_dir)
-                self.master_openssh = self.openssh(['-M', '-N'], [])
+                self.master_openssh = self.openssh(['-M', '-N'], [],
+                        stderr=self.master_openssh_stderr)
                 # Wait for termination in the case the target is
                 # not available:
                 while True:
@@ -725,7 +726,8 @@ class All(ClassOfSystems):
                 os.close(fd)
         peculiarities = output_catcher.peculiarities()
         cmd_openssh = self.openssh(output_catcher.allocate_tty, [cmd],
-                remotes_stdin.remotes_stdin, output_catcher.remotes_stdout)
+                remotes_stdin.remotes_stdin, output_catcher.remotes_stdout,
+                output_catcher.remotes_stdout)
  
         all_selectables = [
                 StdWrapper(cmd_openssh.stdout, output_catcher,
@@ -755,10 +757,12 @@ class All(ClassOfSystems):
         finally:
             peculiarities.reset_settings()
 
-    def openssh(self, options, cmd, stdin=None, stdout=None):
+    master_openssh_stderr = None
+
+    def openssh(self, options, cmd, stdin=None, stdout=None, stderr=None):
         return Popen(['ssh', '-l', 'root'] + options
                 + ['-S', self.ssh_master_socket, self.name]
-                + cmd, stdin=stdin, stdout=stdout, stderr=stdout)
+                + cmd, stdin=stdin, stdout=stdout, stderr=stderr)
 
     def print_dest(self):
 # XXX: Muss in rcmd, rsync und search_for_output verwendet werden!

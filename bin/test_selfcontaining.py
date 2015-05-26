@@ -1109,6 +1109,7 @@ class TestNonExistentAll(unittest.TestCase):
         s = All(non_existent)
         system_object_init(s, classes_from_examination_of_running_system,
                 RunModeClassDummy)
+        s.master_openssh_stderr = open('/dev/null')
         self.host = s
 
     def test_connection_failure(self):

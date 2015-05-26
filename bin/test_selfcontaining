@@ -17,6 +17,8 @@
 
 
 set -e
+#shopt -s extdebug
+trap "echo ${BASH_COMMAND}" ERR
 . test_util
 
 NON_EXISTENT=doesntexist
@@ -45,12 +47,12 @@ dc()
 
 diff_correct_offline()
 {
-    diff_richtig "$NON_EXISTENT: $NON_EXISTENT is OFFLINE"
+    diff_richtig "$1$NON_EXISTENT: $NON_EXISTENT is OFFLINE"
 }
 
 test_files test_files
 start_pyunit_test test_real_system
-distribute_command All true 2>&1|diff_correct_offline
+distribute_command All true 2>&1|diff_correct_offline "ssh: Could not resolve hostname doesntexist: Name or service not known\r\n"
 distribute_files 2>&1|diff_correct_offline
 dc 1 --skip=$NON_EXISTENT All
 
@@ -76,7 +78,7 @@ cat $SYS_ROOT/a/b/c/generated|diff_richtig 'generated via generated_files'
 # test_sites/host_tar/hosts.py evaluates REAL_SYSTEM.
 REAL_SYSTEM=$NON_EXISTENT $MK_KS_CFG_CMD 2>&1\
             |grep -E \
-"^$NON_EXISTENT: (Temporary failure in name resolution|Name or service not known)$"\
+"^$NON_EXISTENT: (Temporary failure in name resolution|Name or service not known|No address associated with hostname)$"\
 >/dev/null
 
 # Does remote's stderr occur on local stderr?
