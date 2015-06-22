@@ -37,7 +37,8 @@ dist_name = names[0]
 names[0] = {'SL': 'Scientific'}.get(dist_name, dist_name)
 
 check_communicate(
-'((bzr log --lim 1 2>/dev/null&&bzr st&&bzr di&&bzr info)'
+'((bzr branches >/dev/null 2>&1 &&'
+  'bzr log --lim 1 2>/dev/null&&bzr st&&(bzr di;bzr info))'
 '||(git log -1&&git status&&git diff))>'
         + join(target_dir, 'dvd_version_info'))
 
