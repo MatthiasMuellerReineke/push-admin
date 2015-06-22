@@ -232,16 +232,15 @@ class TestCentosReal(TestCentos, unittest.TestCase):
         self.assertEqual(a, b)
 
     def test_get_remote(self):
-        self.assertEqual("""ext4
-ext3
-ext2
-nodev proc
-nodev devpts
-iso9660
-vfat
-hfs
-hfsplus
-""", self.system_object.get_remote('etc/filesystems'))
+        test_content = 'test_content'
+        system_object = self.system_object
+        tmp = on_exit_vanishing_dtemp(
+                dir=join(system_object.remote_root(), 'tmp'))
+        test_file = join(* tmp.split('/')[-2:] + ['test_file'])
+        system_object.ssh('echo -n ' + test_content + '>/' + test_file)
+        self.assertEqual(test_content,
+            self.system_object.get_remote(test_file))
+
 
     def test_rcmd(self):
         self.assertRaises(CalledProcessError, self.run_mode.rcmd, 'false')
