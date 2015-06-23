@@ -713,8 +713,9 @@ class All(ClassOfSystems):
             fd = inotifyx.init()
             try:
                 wd = inotifyx.add_watch(fd, ssh_master_socket_dir)
-                self.master_openssh = self.openssh(['-M', '-N'], [],
-                        stderr=self.master_openssh_stderr)
+                self.master_openssh = self.openssh(['-M', '-N']
+                        + remote_authorized_key_env(),
+                        [], stderr=self.master_openssh_stderr)
                 # Wait for termination in the case the target is
                 # not available:
                 while True:
@@ -782,14 +783,19 @@ class All(ClassOfSystems):
 
     def remote_root(self):
         """We're memoized so calling us many times calls us only once."""
+        if remote_authorized_key_env():
+            authorized_keys = OtherIdentityFile()
+        else:
+            authorized_keys = DefaultIdentityFile()
+
         mount_point = mkdtemp()
         register(rmdir, mount_point)
 
         stderr_catcher = StderrCatcher()
         try:
-            # FIXME: Either add "+ ' -o IdentityFile=...'" or remove
-            # $REMOTE_AUTHORIZED_KEY from the scripts:
-            check_call(['bash', '-c', 'sshfs root@' + self.name + ':/ ' + mount_point
+            check_call(['bash', '-c', 'sshfs {0}root@{1}:/ {2}'.format(
+                authorized_keys.opt_identity_file_option,
+                self.name, mount_point)
                 ],
                 stderr=stderr_catcher.file)
         except CalledProcessError:
@@ -800,11 +806,7 @@ class All(ClassOfSystems):
             check_call(['fusermount', '-u', mount_point])
         register(umount)
 
-        remote_ssh_dir = join(mount_point, 'root/.ssh')
-        remote_authorized_keys = join(remote_ssh_dir, 'authorized_keys')
-        our_public_key = file_content(expanduser('~/.ssh/id_rsa.pub'))
-        mkdir_p(remote_ssh_dir)
-        ensure_contains(remote_authorized_keys, our_public_key)
+        authorized_keys.copy_to_remote_authorized_keys()
 
         return mount_point
 
@@ -902,6 +904,31 @@ class Search:
 
     def __getattr__(self, name):
         return self.system_object.get_method_result(name)
+
+
+class OtherIdentityFile:
+    def __init__(self):
+        self.opt_identity_file_option = '-o IdentityFile={0} '.format(
+                remote_authorized_key_env()[1])
+
+    def copy_to_remote_authorized_keys(self):
+        # Don't know how to do it in my case.
+        pass
+
+
+class DefaultIdentityFile:
+    opt_identity_file_option = ''
+
+    def copy_to_remote_authorized_keys(self):
+        remote_ssh_dir = join(mount_point, 'root/.ssh')
+        remote_authorized_keys = join(remote_ssh_dir, 'authorized_keys')
+        our_public_key = file_content(expanduser('~/.ssh/id_rsa.pub'))
+        mkdir_p(remote_ssh_dir)
+        ensure_contains(remote_authorized_keys, our_public_key)
+
+
+def remote_authorized_key_env():
+    return environ.get('REMOTE_AUTHORIZED_KEY', '').split()
 
 
 def gethostbyname(name):
