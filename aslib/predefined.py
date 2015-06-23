@@ -701,6 +701,9 @@ class All(ClassOfSystems):
 
     def ssh(self, cmd, output_catcher=ForwardToStd(),
             remotes_stdin=StdinWrapper()):
+        if not cmd:
+            # XXX: Where do these empty commands come from?
+            return
         def assert_master_openssh_running():
             if self.master_openssh.poll() == 255:
                 raise Offline(self)
