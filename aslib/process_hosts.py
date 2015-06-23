@@ -194,12 +194,25 @@ class RealRun(RunMode):
 
 
 def classes_from_examination_of_running_system(system_object):
-    return classes_from_names(system_object.get_remote('etc/issue')
-            .splitlines()[0].split()) + [
+    get_remote_file = system_object.get_remote_file
+    try:
+        f = get_remote_file('etc/os-release')
+    except IOError:
+        pretty_name = system_object.get_remote('etc/redhat-release')
+    else:
+        pretty_name = get_pretty_name(f)
+    return classes_from_names(pretty_name.splitlines()[0].split()) + [
             get_conf_attr_from_str0(system_object.ssh_silent_stdout(
                         '/usr/bin/perl',
                         remotes_stdin=FileWrapper(open(join(package, 'imvirt')))))
            ]
+
+
+def get_pretty_name(f):
+    for l in f:
+        name, value = l.split('=')
+        if name == 'PRETTY_NAME':
+            return value[1:-2]
 
 
 def get_conf_attr_from_str0(s):

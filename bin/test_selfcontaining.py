@@ -1011,6 +1011,25 @@ class TestReplaceLibAttr(unittest.TestCase):
         self.assertEqual((search.release_major, search.inst_media_dev),
                (str(major_release), dvd_device))
 
+    def test_get_pretty_name(self):
+        self.assertEqual(process_hosts.get_pretty_name(StringIO(
+"""NAME="Scientific Linux"
+VERSION="7.1 (Nitrogen)"
+ID="rhel"
+ID_LIKE="fedora"
+VERSION_ID="7.1"
+PRETTY_NAME="Scientific Linux 7.1 (Nitrogen)"
+ANSI_COLOR="0;31"
+CPE_NAME="cpe:/o:redhat:enterprise_linux:7.1:GA"
+HOME_URL="http://www.scientificlinux.org//"
+BUG_REPORT_URL="scientific-linux-devel@listserv.fnal.gov"
+
+REDHAT_BUGZILLA_PRODUCT="Scientific Linux 7"
+REDHAT_BUGZILLA_PRODUCT_VERSION=7.1
+REDHAT_SUPPORT_PRODUCT="Scientific Linux"
+REDHAT_SUPPORT_PRODUCT_VERSION=7.1
+""")), "Scientific Linux 7.1 (Nitrogen)")
+
     def test_non_el(self):
         classes_from_names(['Debian'])
 
