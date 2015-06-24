@@ -786,13 +786,13 @@ class All(ClassOfSystems):
 
     def remote_root(self):
         """We're memoized so calling us many times calls us only once."""
+        mount_point = mkdtemp()
+        register(rmdir, mount_point)
+
         if remote_authorized_key_env():
             authorized_keys = OtherIdentityFile()
         else:
-            authorized_keys = DefaultIdentityFile()
-
-        mount_point = mkdtemp()
-        register(rmdir, mount_point)
+            authorized_keys = DefaultIdentityFile(mount_point)
 
         stderr_catcher = StderrCatcher()
         try:
@@ -922,8 +922,11 @@ class OtherIdentityFile:
 class DefaultIdentityFile:
     opt_identity_file_option = ''
 
+    def __init__(self, mount_point):
+        self.mount_point = mount_point
+
     def copy_to_remote_authorized_keys(self):
-        remote_ssh_dir = join(mount_point, 'root/.ssh')
+        remote_ssh_dir = join(self.mount_point, 'root/.ssh')
         remote_authorized_keys = join(remote_ssh_dir, 'authorized_keys')
         our_public_key = file_content(expanduser('~/.ssh/id_rsa.pub'))
         mkdir_p(remote_ssh_dir)
