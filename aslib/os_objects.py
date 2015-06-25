@@ -138,7 +138,7 @@ class Service(SimpleConditionalCommand):
 # XXX: Das müsste nach no_commands_required!
             self.system_object.ssh_silent_stdout(
                 "chkconfig --list " + name + ' 2>/dev/null'
-                "|grep $'\t0:off\t1:off\t2:on\t3:on\t4:on\t5:on\t6:off$'")
+                "|grep '\t0:off\t1:off\t2:on\t3:on\t4:on\t5:on\t6:off$'")
         except CalledProcessError:
             return self.create_commands(name)
         return []
