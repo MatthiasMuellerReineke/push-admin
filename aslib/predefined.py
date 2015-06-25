@@ -38,6 +38,7 @@ from utilities import memoized, memoize,\
          ensure_contains, tunix
 from remote_exec import ForwardToStd, CatchStdout,\
          CatchStdoutCatcherStderrMsg,\
+         communicate_with_child,\
          StdWrapper, StdinWrapper, process_ready_files
 from os_objects import Packages, User, UsersGroups, Group,\
          Service, Link, Directory, Files,\
@@ -728,38 +729,11 @@ class All(ClassOfSystems):
                     assert_master_openssh_running()
             finally:
                 os.close(fd)
-        peculiarities = output_catcher.peculiarities()
         cmd_openssh = self.openssh(output_catcher.allocate_tty, [cmd],
                 remotes_stdin.remotes_stdin, output_catcher.remotes_stdout,
                 output_catcher.remotes_stdout)
- 
-        all_selectables = [
-                StdWrapper(cmd_openssh.stdout, output_catcher,
-                    output_catcher.take_stdout),
-                StdWrapper(cmd_openssh.stderr, output_catcher,
-                    output_catcher.take_stderr),
-            ]
-        always_ready = []
-        remotes_stdin.chan = cmd_openssh.stdin
-        remotes_stdin.append_to_always_ready(always_ready)
-        remotes_stdin.append_to_selectables(all_selectables)
-        peculiarities.save_settings()
-        try:
-            peculiarities.manipulate_settings()
-            exit_code = None
-            while not all([o.eof for o in all_selectables + always_ready]):
-                if any([not o.eof for o in always_ready]):
-                    process_ready_files(all_selectables, always_ready, 0)
-                else:
-                    process_ready_files(all_selectables, always_ready)
-                assert_master_openssh_running()
-                exit_code = cmd_openssh.poll()
-                if exit_code:
-                    raise CalledProcessError(exit_code, cmd)
-                if exit_code == 0:
-                    break
-        finally:
-            peculiarities.reset_settings()
+        communicate_with_child(cmd_openssh, output_catcher, remotes_stdin,
+                assert_master_openssh_running, cmd)
 
     master_openssh_stderr = None
 

@@ -18,7 +18,7 @@
 
 import select
 from sys import stdin, stderr, stdout
-from subprocess import PIPE
+from subprocess import PIPE, CalledProcessError
 import tty
 import termios
 
@@ -180,6 +180,40 @@ class StdWrapper(SelectableWrapper):
 
     def fileno(self):
         return self.selectable.fileno()
+
+
+def communicate_with_child(process, output_catcher, remotes_stdin,
+        assert_condition, cmd):
+    peculiarities = output_catcher.peculiarities()
+
+    all_selectables = [
+            StdWrapper(process.stdout, output_catcher,
+                output_catcher.take_stdout),
+            StdWrapper(process.stderr, output_catcher,
+                output_catcher.take_stderr),
+        ]
+    always_ready = []
+    remotes_stdin.chan = process.stdin
+    remotes_stdin.append_to_always_ready(always_ready)
+    remotes_stdin.append_to_selectables(all_selectables)
+    peculiarities.save_settings()
+    try:
+        peculiarities.manipulate_settings()
+        exit_code = None
+        while not all([o.eof for o in all_selectables + always_ready]):
+            if any([not o.eof for o in always_ready]):
+                process_ready_files(all_selectables, always_ready, 0)
+            else:
+                process_ready_files(all_selectables, always_ready)
+            assert_condition()
+            exit_code = process.poll()
+            if exit_code:
+                raise CalledProcessError(exit_code, cmd)
+            if exit_code == 0:
+                process_ready_files(all_selectables, always_ready)
+                break
+    finally:
+        peculiarities.reset_settings()
 
 
 def process_ready_files(all_selectables, always_ready, *timeout):

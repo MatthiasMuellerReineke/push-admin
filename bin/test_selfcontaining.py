@@ -24,14 +24,16 @@ from stat import S_IRUSR, S_IWUSR
 from os import mkdir, stat, makedirs, symlink, chmod,\
          environ
 from time import sleep
-from subprocess import CalledProcessError
+from subprocess import CalledProcessError, Popen
 from os.path import join, lexists, isdir
 from cStringIO import StringIO
 import unittest
 
 from aslib.utilities import tunix, write, memoize, ensure_contains
-from aslib.remote_exec import MatchBuffer, StdWrapper,\
-        AlwaysPrintDestination, PrintDestinationForOutput, NoTty
+from aslib.remote_exec import MatchBuffer, StdWrapper, StdinWrapper,\
+        CatchStdout,\
+        AlwaysPrintDestination, PrintDestinationForOutput, NoTty,\
+        communicate_with_child
 from aslib.os_objects import option_with_values, User, UsersGroups,\
          Packages,\
          Files, Link, Directory, NoManipulation, Make, ChangeGroup,\
@@ -756,6 +758,18 @@ class TestSimple(unittest.TestCase):
             sw.process()
         finally:
             peculiarities.reset_settings()
+
+    def test_communicate_with_child(self):
+        test_val = 'A'
+        output_catcher = CatchStdout()
+        stdin_wrapper = StdinWrapper()
+        remotes_stdin = stdin_wrapper.remotes_stdin
+        communicate_with_child(Popen(['echo', '-n', test_val],
+            # XXX: Is it possible to save StdinWrapper?
+            stdout=output_catcher.remotes_stdout,
+            stdin=remotes_stdin, stderr=remotes_stdin),
+            output_catcher, stdin_wrapper, tunix, None)
+        self.assertEqual(output_catcher.stdout, test_val)
 
     def test_memoize(self):
         b_ret = 13469
