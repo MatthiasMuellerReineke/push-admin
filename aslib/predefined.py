@@ -351,8 +351,32 @@ class El(FromExaminationOfSystem, QueryPackagesMixin):
                 + '\n', MakeExecutable)]
 
 
-class El5(FromExaminationOfSystem):
+class HasServiceIsOff:
+    def service_is_off(self, name):
+        try:
+            self.system_object.ssh_silent_stdout(
+                    self.exits_with_0_if_service_on.format(name))
+        except CalledProcessError:
+            return True
+        return False
+
+
+chkconfig_command = 'chkconfig --list {0} 2>/dev/null'\
+            "|grep '\t0:off\t1:off\t2:on\t3:on\t4:on\t5:on\t6:off$'"
+
+
+class El5(FromExaminationOfSystem, HasServiceIsOff):
+    exits_with_0_if_service_on = chkconfig_command
     inst_media_dev = 'hdc'
+
+
+class El6(FromExaminationOfSystem, HasServiceIsOff):
+    exits_with_0_if_service_on = chkconfig_command
+
+
+class El7(FromExaminationOfSystem, HasServiceIsOff):
+    exits_with_0_if_service_on = "systemctl is-enabled {0}"\
+            "|grep '^enabled$'"
 
 
 class Debianish(FromExaminationOfSystem, QueryPackagesMixin):

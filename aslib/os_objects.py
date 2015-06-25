@@ -134,12 +134,8 @@ class Link(SimpleConditionalCommand):
 class Service(SimpleConditionalCommand):
     def commands(self):
         name = self.names
-        try:
 # XXX: Das müsste nach no_commands_required!
-            self.system_object.ssh_silent_stdout(
-                "chkconfig --list " + name + ' 2>/dev/null'
-                "|grep '\t0:off\t1:off\t2:on\t3:on\t4:on\t5:on\t6:off$'")
-        except CalledProcessError:
+        if self.system_object.service_is_off(name):
             return self.create_commands(name)
         return []
 

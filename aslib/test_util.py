@@ -24,7 +24,7 @@ import unittest
 import utilities
 from utilities import on_exit_vanishing_dtemp, write
 import predefined
-from predefined import CentOS, pristine_for_rpms_bug_dir
+from predefined import CentOS, El5, pristine_for_rpms_bug_dir
 from process_hosts import get_conf_attr, RunMode, options_from_runmode
 
 
@@ -114,7 +114,7 @@ class RunModeMock(RunMode):
 
 
 def distribution_centos(get_remote):
-    return [CentOS]
+    return [CentOS, El5]
 
 
 def system_object_init(s,
