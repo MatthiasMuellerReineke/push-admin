@@ -158,7 +158,7 @@ class Packages(SimpleConditionalCommand):
 
     def create_single_command(self, names):
         return self.system_object.install_pkg_cmd\
-            + self.packagemanagers_install_cmd + ' '.join(names)
+            + self.packagemanagers_install_cmd + ' '.join(sorted(names))
 
 
 class UsersBase:

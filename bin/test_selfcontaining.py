@@ -175,7 +175,7 @@ class TestPackageNameMapping(unittest.TestCase):
         self.assertEqual(s.packages_cmd().all_commands(),
                 [s.install_pkg_cmd
                 + packagemanagers_install_cmd
-                + ' '.join(expected_packages)])
+                + ' '.join(sorted(expected_packages))])
 
 
 class TestExecuteTestOverride(unittest.TestCase):
@@ -632,7 +632,7 @@ class TestSimple(unittest.TestCase):
                 ['yum install -y pkg-xyz'])
 
     def test_rear_packages(self):
-        self.assertTrue('yum install -y syslinux rear'
+        self.assertTrue('yum install -y rear syslinux'
                 in run_all_any_system_class(RootIsLocal, RearBackup).cmds)
 
     def test_without_rear(self):
