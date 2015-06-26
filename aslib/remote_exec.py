@@ -25,8 +25,7 @@ import termios
 from utilities import tunix
 
 
-class ForwardToStd:
-    allocate_tty = []
+class ForwardToStd(object):
     remotes_stdout = PIPE
 
     def __init__(self, host=None):
@@ -42,6 +41,10 @@ class ForwardToStd:
     def take_stderr(self, s, peculiarities):
         self.pre_output(s, peculiarities)
         stderr.write(s)
+
+    @property
+    def allocate_tty(self):
+        return self.peculiarities().allocate_tty
 
     def peculiarities(self):
         if stderr.isatty():
@@ -225,12 +228,15 @@ def process_ready_files(all_selectables, always_ready, *timeout):
 
 
 class NoTty:
+    allocate_tty = []
+
     def __getattr__(self, name):
         return tunix
 
 
 class Tty:
     f = stderr
+    allocate_tty = ['-tt']
 
     def save_settings(self):
         self.oldtty = termios.tcgetattr(self.f)
