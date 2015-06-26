@@ -28,7 +28,8 @@ from sys import stdin, stdout, stderr, exc_info, modules
 from atexit import register
 from glob import glob
 import filecmp
-from subprocess import check_call, Popen, CalledProcessError
+import threading
+from subprocess import check_call, Popen, CalledProcessError, PIPE
 
 import inotifyx
 from jinja2 import Environment, FileSystemLoader
@@ -741,14 +742,21 @@ class All(ClassOfSystems):
             fd = inotifyx.init()
             try:
                 wd = inotifyx.add_watch(fd, ssh_master_socket_dir)
-                self.master_openssh = self.openssh(['-M', '-N']
+                self.master_openssh = master_openssh = self.openssh(
+                        ['-M', '-N']
                         + remote_authorized_key_env(),
-                        [], stderr=self.master_openssh_stderr)
+                        [], stderr=PIPE)
+                filter_masters_stderr_thread = threading.Thread(
+                        target=self.filter_masters_stderr,
+                        args=(master_openssh.stderr,)
+                        )
+                filter_masters_stderr_thread.daemon = True
+                filter_masters_stderr_thread.start()
                 # Wait for termination in the case the target is
                 # not available:
                 while True:
                     if inotifyx.get_events(fd, 0.1):
-                        register(self.master_openssh.kill)
+                        register(master_openssh.kill)
                         break
                     assert_master_openssh_running()
             finally:
@@ -759,7 +767,11 @@ class All(ClassOfSystems):
         communicate_with_child(cmd_openssh, output_catcher, remotes_stdin,
                 assert_master_openssh_running, cmd)
 
-    master_openssh_stderr = None
+    def filter_masters_stderr(self, master_sshs_stderr):
+        for l in master_sshs_stderr:
+            if not l.startswith(
+                'process_mux_new_session: tcgetattr: Invalid argument'):
+                stderr.write(l)
 
     def openssh(self, options, cmd, stdin=None, stdout=None, stderr=None):
         return Popen(['ssh', '-l', 'root'] + options
