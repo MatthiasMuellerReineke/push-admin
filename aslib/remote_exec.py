@@ -236,7 +236,7 @@ class NoTty:
 
 class Tty:
     f = stderr
-    allocate_tty = ['-tt']
+    allocate_tty = ['-qtt']
 
     def save_settings(self):
         self.oldtty = termios.tcgetattr(self.f)
