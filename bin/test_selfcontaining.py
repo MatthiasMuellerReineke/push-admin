@@ -170,12 +170,14 @@ class TestPackageNameMapping(unittest.TestCase):
             get_classes_from_examination_of_system, expected_packages):
         class AllDerived(All):
             packages = self.example_packages
+        sorted_expected_packages = sorted(expected_packages)
         s = AllDerived('')
         system_object_init(s, get_classes_from_examination_of_system)
         self.assertEqual(s.packages_cmd().all_commands(),
                 [s.install_pkg_cmd
                 + packagemanagers_install_cmd
-                + ' '.join(sorted(expected_packages))])
+                + ' '.join(sorted_expected_packages)
+                + s.check_installation(sorted_expected_packages)])
 
 
 class TestExecuteTestOverride(unittest.TestCase):
@@ -625,11 +627,13 @@ class TestSimple(unittest.TestCase):
         DryRun(None).conditional_cmds([CommandStub()])
 
     def test_packages_all_subclass(self):
+        test_packages = ['pkg-xyz']
         class AllDerived(RootIsLocal):
             def packages(self):
-                return ['pkg-xyz']
-        self.assertEqual(run_all_any_system_class(AllDerived).cmds,
-                ['yum install -y pkg-xyz'])
+                return test_packages
+        s = run_all_any_system_class(AllDerived)
+        self.assertEqual(s.cmds, ['yum install -y pkg-xyz'
+            + s.all_object.check_installation(test_packages)])
 
     def test_without_rear(self):
         self.assertFalse(run_all_root_is_local().cmds)

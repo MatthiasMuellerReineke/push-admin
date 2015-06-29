@@ -310,6 +310,12 @@ class El(FromExaminationOfSystem, QueryPackagesMixin):
         else:
             return []
 
+    def check_installation(self, names):
+        """This exists because if yum installs multible packages it may
+        fail silently if one of these packages doesn't exist in the repos.
+        """
+        return '&&rpm --query {0}>/dev/null'.format(' '.join(names))
+
     def cleanup(self, remote_root):
         """See
         http://www.redhat.com/archives/rhl-list/2003-December/msg04713.html
@@ -387,6 +393,9 @@ class Debianish(FromExaminationOfSystem, QueryPackagesMixin):
         return self.packages_list(
                 "dpkg-query --showformat='${Package}\t${Status}\n' --show",
                 packages)
+
+    def check_installation(self, names):
+        return ''
 
 
 class EmulationFunction:
