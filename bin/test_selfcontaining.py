@@ -38,7 +38,7 @@ from aslib.os_objects import option_with_values, User, UsersGroups,\
          Packages,\
          Files, Link, Directory, NoManipulation, Make, ChangeGroup,\
          mkdir_command, commands_from_instances
-from aslib.predefined import All, Override, RearBackup, Offline, El,\
+from aslib.predefined import All, Override, Offline, El,\
          non_existent, file_parts_entry,\
          FileNameCollision, MakeExecutable, MakeOwnedRecursivelyBy,\
          Debianish, DontTouch, hosts_with_class,\
@@ -630,10 +630,6 @@ class TestSimple(unittest.TestCase):
                 return ['pkg-xyz']
         self.assertEqual(run_all_any_system_class(AllDerived).cmds,
                 ['yum install -y pkg-xyz'])
-
-    def test_rear_packages(self):
-        self.assertTrue('yum install -y rear syslinux'
-                in run_all_any_system_class(RootIsLocal, RearBackup).cmds)
 
     def test_without_rear(self):
         self.assertFalse(run_all_root_is_local().cmds)

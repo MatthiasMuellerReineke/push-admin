@@ -425,14 +425,6 @@ class VirtualBox(FromExaminationOfSystem):
     pass
 
 
-class RearBackup(Override):
-    """The package "rear" can't be included into the packages section of
-       the kickstart file for an original Redhat DVD because it doesn't
-       contain the package "rear". It is a part of Epel."""
-    def packages(self):
-        return ['rear', 'syslinux']
-
-
 class All(ClassOfSystems):
     additional_default_implementations = {}
 
