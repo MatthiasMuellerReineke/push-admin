@@ -168,8 +168,6 @@ echo "\n\n$0 parameter:\n$@">>$DVD_VERSION_INFO
 
 genisoimage -b isolinux/isolinux.bin -no-emul-boot -c isolinux/isolinux.cat -boot-load-size 4 -boot-info-table -J -R -v -T -o $ISO_NEW working_copy
 
-# Doesn't exist on Centos + EPEL.
-# That's the reason why this is made for Ubuntu:
 implantisomd5 --supported-iso $ISO_NEW
 
 # IMAGE_DEST should contain something which processes the image
