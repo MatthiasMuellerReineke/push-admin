@@ -32,6 +32,20 @@ def usermod(user_name, options):
     return 'usermod {1}{0}'.format(user_name, options)
 
 
+class TestReplaceLibAttr(unittest.TestCase):
+    def setUp(self):
+        self.__saved = []
+
+    def manipulate_module(self, module, attribute_name, value):
+        self.__saved.append((module, attribute_name,
+            getattr(module, attribute_name)))
+        setattr(module, attribute_name, value)
+
+    def tearDown(self):
+        for saved in self.__saved:
+            setattr(*saved)
+
+
 class TestInTmpDir(unittest.TestCase):
     def setUp(self):
         self.cwd = getcwd()

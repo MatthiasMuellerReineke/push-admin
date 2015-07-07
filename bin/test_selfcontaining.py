@@ -102,18 +102,13 @@ class TestMatchBuffer(unittest.TestCase):
         self.assertEqual(v1 + v2, 'abde')
 
 
-class TestPrintDestinationForOutput(unittest.TestCase):
+class TestPrintDestinationForOutput(test_util.TestReplaceLibAttr):
     manipulated = ('stdout', 'stderr')
 
     def setUp(self):
-        self.saved = []
+        super(TestPrintDestinationForOutput, self).setUp()
         for i in self.manipulated:
-            self.saved.append(getattr(remote_exec, i))
-            setattr(remote_exec, i, StringIO())
-
-    def tearDown(self):
-        for manipulated, saved in zip(self.manipulated, self.saved):
-            setattr(remote_exec, manipulated, saved)
+            self.manipulate_module(remote_exec, i, StringIO())
 
     def test_nothing_used(self):
         self.execute(tunix, 0)
@@ -782,6 +777,26 @@ class TestSimple(unittest.TestCase):
         a = A()
         self.assertEqual((a.b(), a.b(), a.count), (b_ret, b_ret, 1))
 
+    def test_testreplacelibattr(self):
+        test_val = 'value before manipulation'
+        manipulation = 'test manipulation'
+        class ModuleMock:
+            our_test_attr_in_module = test_val
+        module = ModuleMock()
+
+        class TestReplaceLibAttr(test_util.TestReplaceLibAttr):
+            def runTest(self):
+                pass
+        trla = TestReplaceLibAttr()
+        trla.setUp()
+        trla.manipulate_module(module,
+                'our_test_attr_in_module', manipulation)
+        after_manipulation = module.our_test_attr_in_module
+        trla.tearDown()
+
+        self.assertEqual((test_val, manipulation),
+                (module.our_test_attr_in_module, after_manipulation))
+
 
 def test_shall_i_process_host_dont_touch(assert_func,
         shall_i_process_host_object):
@@ -987,13 +1002,7 @@ class HasName:
     name = 'n'
 
 
-class TestReplaceLibAttr(unittest.TestCase):
-    def setUp(self):
-        self.__get_conf_attr = process_hosts.get_conf_attr
-
-    def tearDown(self):
-        process_hosts.get_conf_attr = self.__get_conf_attr
-
+class TestReplaceLibAttr(test_util.TestReplaceLibAttr):
     def test_release_other5(self):
         class Fictional(FromExaminationOfSystem):
             pass
@@ -1005,8 +1014,10 @@ class TestReplaceLibAttr(unittest.TestCase):
             try:
                 return {'Fictional': Fictional}[name]
             except KeyError:
-                return self.__get_conf_attr(name, release_major_)
-        process_hosts.get_conf_attr = get_conf_attr_f
+                return get_conf_attr(name, release_major_)
+        get_conf_attr = process_hosts.get_conf_attr
+        self.manipulate_module(process_hosts,
+                'get_conf_attr', get_conf_attr_f)
         self.execute_release('Fictional Linux 5', 5, 'dvd')
 
     # The following functions don't use the tear down mechanism:
