@@ -930,6 +930,19 @@ class Xyz(Override):
     pass
 
 
+class TestTemplateEntry(test_util.TestReplaceLibAttr):
+    def test_alternate_source(self):
+        self.manipulate_module(predefined, 'render_template',
+                lambda dest_file_name, **kwargs:
+                           (dest_file_name, kwargs))
+        dest = 'A'
+        src = 'B'
+        o = predefined.ClassOfSystems()
+        o.search = None
+        self.assertEqual(o.template_entry(dest,
+            src=src), (dest, (src, {'search': None})))
+
+
 class TestInTmpDir(TestInTmpDir):
     def test_mkdir_p_rel_path(self):
         path = 'xyz'

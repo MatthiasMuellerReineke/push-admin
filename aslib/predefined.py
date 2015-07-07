@@ -170,9 +170,11 @@ def complete_file_description(description):
                     .format(l, description))
 
 
-def file_parts_entry(dest_file_name, **kwargs):
+def file_parts_entry(dest_file_name, src=None, **kwargs):
+    if not src:
+        src = basename(dest_file_name)
     return (dest_file_name,
-            render_template(basename(dest_file_name), **kwargs))
+            render_template(src, **kwargs))
 
 
 def render_template(template_file_name, **kwargs):
@@ -243,9 +245,9 @@ class ClassOfSystems(object):
     def template_entry_executable(self, dest_file_name):
         return self.template_entry(dest_file_name) + (MakeExecutable,)
 
-    def template_entry(self, dest_file_name, **kwargs):
+    def template_entry(self, dest_file_name, src=None, **kwargs):
         return file_parts_entry(dest_file_name,
-                search=self.search, **kwargs)
+                search=self.search, src=src, **kwargs)
 
     def other_systems(self, class_name, site_configuration):
         other_systems = hosts_with_class(class_name, site_configuration)
