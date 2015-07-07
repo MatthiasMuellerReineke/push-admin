@@ -28,6 +28,8 @@ do
    ARC_DIR=$(arc_dir $REMOTE)
    mkdir -p $ARC_DIR
 
+   # XXX: Modern distributions contain more keys, permissions need to be
+   #      preserved!
    for I in ssh_host_dsa_key ssh_host_key ssh_host_rsa_key\
       ssh_host_dsa_key.pub ssh_host_key.pub ssh_host_rsa_key.pub
    do
