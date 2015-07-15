@@ -157,7 +157,6 @@ class StdinWrapper(SelectableWrapper):
         r = stdin.read()
         if r:
             self.chan.write(r)
-        self.eof = not r
 
     def append_to_always_ready(self, always_ready):
         pass
@@ -179,7 +178,6 @@ class StdWrapper(SelectableWrapper):
     def process(self):
         out = self.selectable.read()
         self.take(out, self.output_catcher.peculiarities())
-        self.eof = not out
 
     def fileno(self):
         return self.selectable.fileno()
