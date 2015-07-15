@@ -203,7 +203,7 @@ def communicate_with_child(process, output_catcher, remotes_stdin,
     try:
         peculiarities.manipulate_settings()
         exit_code = None
-        while not all([o.eof for o in all_selectables + always_ready]):
+        while True:
             if any([not o.eof for o in always_ready]):
                 process_ready_files(all_selectables, always_ready, 0)
             else:
