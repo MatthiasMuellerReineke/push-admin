@@ -874,15 +874,24 @@ class TestConfigurationInTmp(TestInTmpDir):
         system_object_init(s, get_distribution_classes_empty)
         self.assertRaises(FileNameCollision, lambda: s.trees())
 
+    test_service_name = 'test_service'
+    example_service_file_name = join(All.systemd_service_dir,
+                    test_service_name + All.service_extension)
+
+    def test_service_detection_in_generated_files(self):
+        class DerivedAll(All):
+            files = (self.example_service_file_name, None)
+        self.assertEqual(instantiate_init_noname(DerivedAll).services(),
+                [self.test_service_name])
+
     def test_systemd_service_detection(self):
-        self.execute_test_service_detection(
-                join(All.systemd_service_dir,
-                    'test_service' + All.service_extension),
-                'test_service')
+        self.execute_test_service_detection(self.example_service_file_name,
+                self.test_service_name)
 
     def test_service_detection(self):
-        self.execute_test_service_detection(in_rcd_initd('test_service'),
-                'test_service')
+        test_service_name = self.test_service_name
+        self.execute_test_service_detection(
+                in_rcd_initd(test_service_name), test_service_name)
 
     def execute_test_service_detection(self, file_name, expected):
         self.mk_all(file_name)

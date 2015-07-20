@@ -599,17 +599,23 @@ class All(ClassOfSystems):
 
     def services(self):
         service_extension = self.service_extension
+        def service_name(file_name):
+            return file_name[: - len(service_extension)]
+
         s = map(
            basename,
            reduce(lambda x, y: x + y,
                self._glob_in_trees(in_rcd_initd('*'))
-               + [ [ file_name[: - len(service_extension)]
+               + [ [ service_name(file_name)
                    for file_name in file_names ]
                    for file_names in self._glob_in_trees(
                        join(self.systemd_service_dir, '*')
                        + service_extension) ],
                filter(lambda l: dirname(l) == rcd_initd_dir,
                    [ link for (target, link) in self._links() ])
+               + [ service_name(file_name)
+                   for file_name, content in self.generated_files()
+                   if file_name.startswith(self.systemd_service_dir) ]
            )
         )
         # Sort for reproduceable result:
