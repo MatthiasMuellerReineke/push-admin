@@ -874,10 +874,20 @@ class TestConfigurationInTmp(TestInTmpDir):
         system_object_init(s, get_distribution_classes_empty)
         self.assertRaises(FileNameCollision, lambda: s.trees())
 
+    def test_systemd_service_detection(self):
+        self.execute_test_service_detection(
+                join(All.systemd_service_dir,
+                    'test_service' + All.service_extension),
+                'test_service')
+
     def test_service_detection(self):
-        self.mk_all(in_rcd_initd('test_service'))
+        self.execute_test_service_detection(in_rcd_initd('test_service'),
+                'test_service')
+
+    def execute_test_service_detection(self, file_name, expected):
+        self.mk_all(file_name)
         self.assertEqual(non_existent_centos_runmodemock().services(),
-                ['test_service'])
+                [expected])
 
     def mk_all(self, *dir_name):
         ret = join(dir_of_tree('All'), *dir_name)

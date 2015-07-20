@@ -594,14 +594,20 @@ class All(ClassOfSystems):
                 map(lambda i: (i[0], i[1][0]), fractional_files.items())
                 + accumulate('files'))
 
+    systemd_service_dir = 'etc/systemd/system'
+    service_extension = '.service'
+
     def services(self):
+        service_extension = self.service_extension
         s = map(
            basename,
            reduce(lambda x, y: x + y,
-               map(lambda tree:
-                       glob(join(dir_of_tree(tree), in_rcd_initd('*'))),
-                   self.trees()
-               ),
+               self._glob_in_trees(in_rcd_initd('*'))
+               + [ [ file_name[: - len(service_extension)]
+                   for file_name in file_names ]
+                   for file_names in self._glob_in_trees(
+                       join(self.systemd_service_dir, '*')
+                       + service_extension) ],
                filter(lambda l: dirname(l) == rcd_initd_dir,
                    [ link for (target, link) in self._links() ])
            )
@@ -609,6 +615,10 @@ class All(ClassOfSystems):
         # Sort for reproduceable result:
         s.sort()
         return s
+
+    def _glob_in_trees(self, path):
+        return map(lambda tree: glob(join(dir_of_tree(tree), path)),
+                self.trees())
 
     def _links(self):
         return self.accumulate('links')
