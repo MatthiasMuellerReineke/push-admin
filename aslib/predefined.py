@@ -595,11 +595,17 @@ class All(ClassOfSystems):
                 + accumulate('files'))
 
     def services(self):
-        s = map(basename, reduce(lambda x, y: x + y, map(
-           lambda tree: glob(join(dir_of_tree(tree), in_rcd_initd('*'))),
-           self.trees()),
-           filter(lambda l: dirname(l) == rcd_initd_dir,
-               [ link for (target, link) in self._links() ])))
+        s = map(
+           basename,
+           reduce(lambda x, y: x + y,
+               map(lambda tree:
+                       glob(join(dir_of_tree(tree), in_rcd_initd('*'))),
+                   self.trees()
+               ),
+               filter(lambda l: dirname(l) == rcd_initd_dir,
+                   [ link for (target, link) in self._links() ])
+           )
+        )
         # Sort for reproduceable result:
         s.sort()
         return s
