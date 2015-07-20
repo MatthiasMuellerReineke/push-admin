@@ -644,6 +644,7 @@ class All(ClassOfSystems):
                 if self.is_wanted(dir_name):
                     dir_trees.add(dir_name)
 
+        # Check for filename collision:
         file_sets = []
         for t in dir_trees:
             fs = set()
