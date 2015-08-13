@@ -2,12 +2,12 @@ Source: push-admin
 Section: python
 Priority: extra
 Maintainer: Matthias Müller-Reineke <Matthias.Mueller-Reineke@grundvers.de>
-Build-Depends: openssh-client, python, python-jinja2, python-paramiko, python-support, cdbs, debhelper (>= 7)
+Build-Depends: openssh-client, python, python-jinja2, python-support, cdbs, debhelper (>= 7)
 Standards-Version: 3.8.3
 Homepage: 
 
 Package: push-admin
 Architecture: all
-Depends: ${python:Depends}, python-jinja2, python-paramiko, openssh-client
+Depends: ${python:Depends}, python-jinja2, openssh-client, sshfs, python-inotifyx
 Description: Structured system management made simple
  Hier Text aus E-Mail an Craig einfuegen.
