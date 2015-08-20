@@ -22,6 +22,7 @@ import os
 from os import rmdir, walk, remove, getcwd, rename, environ
 import socket
 import warnings
+import re
 from os.path import join, exists, basename, dirname, expanduser
 from tempfile import mkdtemp, TemporaryFile
 from sys import stdin, stdout, stderr, exc_info, modules
@@ -795,9 +796,12 @@ class All(ClassOfSystems):
 
     def filter_masters_stderr(self, master_sshs_stderr):
         for l in master_sshs_stderr:
-            if not l.startswith(
-                'process_mux_new_session: tcgetattr: Invalid argument'):
+            if not self.master_sshs_stderr_pattern.match(l):
                 stderr.write(l)
+
+    master_sshs_stderr_pattern = re.compile(
+        r'process_mux_new_session: tcgetattr: '
+        r'(Inappropriate ioctl for device|Invalid argument)')
 
     def openssh(self, options, cmd, stdin=None, stdout=None, stderr=None):
         return Popen(['ssh', '-l', 'root'] + options
