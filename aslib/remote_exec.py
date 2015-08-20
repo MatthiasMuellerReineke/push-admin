@@ -47,7 +47,7 @@ class ForwardToStd(object):
         return self.peculiarities().allocate_tty
 
     def peculiarities(self):
-        if stderr.isatty():
+        if stdout.isatty():
             return self.tty
         else:
             return NoTty()
@@ -233,7 +233,7 @@ class NoTty:
 
 
 class Tty:
-    f = stderr
+    f = stdout
     allocate_tty = ['-qtt']
 
     def save_settings(self):
