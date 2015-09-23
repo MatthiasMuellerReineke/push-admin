@@ -55,10 +55,14 @@ def diff(a, b, a_filename, out=stdout, diffpdf=tunix):
                 explanation = make_explanation('is empty')
             out.write(filename_prepared_for_output + explanation)
 
+    def diff_bin_tunix():
+        diff_bin(tunix)
+
     filename_prepared_for_output = colored(out, a_filename,
             on_color='on_yellow')
 
-    {'pdf': lambda: diff_bin(diffpdf), 'war': lambda: diff_bin(tunix),
+    {'pdf': lambda: diff_bin(diffpdf),
+     'war': diff_bin_tunix, 'so': diff_bin_tunix,
     }.get(splitext(a_filename)[1][1:], lambda:
         out.write(''.join(map(lambda x: x + '\n',
                     unified_diff(a.splitlines(),
