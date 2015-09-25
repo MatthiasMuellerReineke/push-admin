@@ -32,6 +32,7 @@ from utilities import object_from_option, colored, tunix,\
          write, file_content, mkdir_p
 
 from remote_exec import ForwardToStd, FileWrapper
+import os_objects
 import predefined
 # TODO: Alles, was hier importiert wird, sollte von predefined in
 # andere Text(e). DontTouch und Override sind ausgenommen;
@@ -144,9 +145,9 @@ class DryRun(RunMode):
     def rsync(self, dir_tree):
         walk_files(dir_tree, lambda dest_file, full_path:
                 # strip leading '/' for get_remote:
-                self.diff(file_content(full_path), dest_file)
+                self.store_remote(dest_file, file_content(full_path),
+                    os_objects.NoManipulation)
                 )
-        self.append_dir_tree_to_file_list(dir_tree)
 
     def rcmd(self, cmd, output_catcher=None):
         print(colored(stdout, cmd, 'red'))
