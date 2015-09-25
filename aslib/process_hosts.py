@@ -177,19 +177,14 @@ class RealRun(RunMode):
 
     def store_remote(self, dest_file, content, manipulate):
         usable_path = self.in_remote_root(dest_file)
-        if self.all_object.get_remote(dest_file) != content:
+        if not exists(usable_path)\
+                or self.all_object.get_remote(dest_file) != content:
             mkdir_p(dirname(usable_path))
             write(usable_path, content)
-        manipulate.execute(usable_path)
-        self.append_to_file_list(dest_file)
-
-    def rsync(self, dir_tree, remote_dir=''):
-        # cp -r keeps permissions and ownerships of already existing files:
-        check_call('cp -r ' + join(dir_tree, '*') + ' ' +
-            self.in_remote_root(remote_dir), shell=True)
         # XXX: I suspect that ^this and immediate power off of the target
         # system led to truncation of some affected files to length 0!
-        self.append_dir_tree_to_file_list(dir_tree)
+        manipulate.execute(usable_path)
+        self.append_to_file_list(dest_file)
 
     def rcmd(self, cmd, output_catcher=ForwardToStd()):
         self.all_object.ssh(cmd, output_catcher)
