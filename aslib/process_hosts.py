@@ -144,7 +144,7 @@ class DryRun(RunMode):
     def rsync(self, dir_tree):
         walk_files(dir_tree, lambda dest_file, full_path:
                 # strip leading '/' for get_remote:
-                self.diff(open(full_path).read(), dest_file)
+                self.diff(file_content(full_path), dest_file)
                 )
         self.append_dir_tree_to_file_list(dir_tree)
 
