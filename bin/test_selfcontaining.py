@@ -29,7 +29,8 @@ from os.path import join, lexists, isdir
 from cStringIO import StringIO
 import unittest
 
-from aslib.utilities import tunix, write, memoize, ensure_contains
+from aslib.utilities import tunix, write, memoize, ensure_contains,\
+        stat_mode
 from aslib.remote_exec import MatchBuffer, StdWrapper, StdinWrapper,\
         CatchStdout,\
         AlwaysPrintDestination, PrintDestinationForOutput, NoTty,\
@@ -447,6 +448,25 @@ class TestSimple(unittest.TestCase):
         s = RootIsLocal()
         file_name = join(s.remote_root(), 't')
         self.assertEqual('', s.get_remote('t'))
+
+    def test_real_run_permission_transfer(self):
+        class RemoteRootLocal:
+            def __init__(self):
+                self.tmp_dir = on_exit_vanishing_dtemp()
+
+            def remote_root(self):
+                return self.tmp_dir
+
+        tree = on_exit_vanishing_dtemp()
+        f_name = 'xyz'
+        in_tree = join(tree, f_name)
+        open(in_tree, 'w').close()
+        mode = 0777
+        chmod(in_tree, mode)
+        s = RemoteRootLocal()
+        RealRun(s).rsync(tree)
+
+        self.assertEqual(stat_mode(join(s.remote_root(), f_name)), mode)
 
     def test_new_file_in_nonexisting_dir(self):
         non_existent_centos(RealRun).store_remote('a/b', 'c')

@@ -20,7 +20,7 @@
 from __future__ import print_function
 import sys
 from sys import stdout, stderr
-from os.path import join, splitext, dirname, isdir, exists
+from os.path import join, splitext, dirname, isdir, exists, isfile
 from time import sleep
 from tempfile import NamedTemporaryFile
 from subprocess import check_call, PIPE, CalledProcessError
@@ -29,7 +29,7 @@ from argparse import ArgumentParser
 from difflib import unified_diff
 
 from utilities import object_from_option, colored, tunix,\
-         write, file_content, mkdir_p
+         write, file_content, mkdir_p, stat_mode
 
 from remote_exec import ForwardToStd, FileWrapper
 import os_objects
@@ -98,11 +98,14 @@ class RunMode:
             + x[0] + '/ ' + self.in_remote_root(x[1]) + '/', shell=True)
 
     def rsync(self, dir_tree):
-        walk_files(dir_tree, lambda dest_file, full_path:
-                # strip leading '/' for get_remote:
-                self.store_remote(dest_file, file_content(full_path),
-                    os_objects.NoManipulation)
-                )
+        walk_files(dir_tree, self.copy_tree_file)
+
+    def copy_tree_file(self, dest_file, full_path):
+        if isfile(self.in_remote_root(dest_file)):
+            manipulate = os_objects.NoManipulation
+        else:
+            manipulate = os_objects.Make(stat_mode(full_path))
+        self.store_remote(dest_file, file_content(full_path), manipulate)
 
     def conditional_cmds(self, conditional_cmds):
         for x in conditional_cmds:

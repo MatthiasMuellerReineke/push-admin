@@ -23,6 +23,8 @@ für Redhat-Linux und CentOS) verwendet).
 Dieser Code muss ohne das VWS funktionieren!"""
 from compiler.misc import mangle
 from functools import partial
+import os
+import stat
 from os import makedirs
 from os.path import isdir, isfile
 from tempfile import mkdtemp
@@ -176,6 +178,10 @@ def on_exit_vanishing_dtemp(*args, **kwargs):
         raise NoMkdir(e)
     register(rmtree, tmp_dir)
     return tmp_dir
+
+
+def stat_mode(file_name):
+    return stat.S_IMODE(os.stat(file_name).st_mode)
 
 
 class NoMkdir(Exception):
