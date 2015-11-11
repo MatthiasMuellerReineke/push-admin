@@ -35,8 +35,23 @@ remote_cp_1st_to_2nd()
     scp $REMOTE_AUTHORIZED_KEY "$@"
 }
 
+
+DEFAULT_REMOTE_TARGET=$1
+
 ssh_exec_default()
 {
     ssh_exec $DEFAULT_REMOTE_TARGET "$@"
 }
-DEFAULT_REMOTE_TARGET=$1
+
+cp_to_remote()
+{
+    remote_cp_1st_to_2nd -r "$1" root@$DEFAULT_REMOTE_TARGET:$2
+}
+
+remote_copy_in_tmp()
+{
+    local SRC="$1"
+    REMOTE_TMP=$(ssh_exec_default mktemp -d)
+    cp_to_remote "$SRC" $REMOTE_TMP
+    REMOTE_COPY=$REMOTE_TMP/$(basename "$SRC")
+}
