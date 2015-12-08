@@ -243,8 +243,9 @@ class ClassOfSystems(object):
         return self.template_entry_executable(
                 join('etc/munin/plugins', name))
 
-    def template_entry_executable(self, dest_file_name):
-        return self.template_entry(dest_file_name) + (MakeExecutable,)
+    def template_entry_executable(self, dest_file_name, **kwargs):
+        return self.template_entry(dest_file_name, **kwargs)\
+                + (MakeExecutable,)
 
     def template_entry(self, dest_file_name, src=None, **kwargs):
         return file_parts_entry(dest_file_name,
