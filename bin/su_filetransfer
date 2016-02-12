@@ -1,0 +1,55 @@
+#!/bin/bash
+
+# Copyright (C) 2011  Matthias Müller-Reineke
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>
+set -e
+
+SOURCE=$1
+REMOTE_TARGET=$2
+
+TMPDIR=$(mktemp -d)
+trap "rm -r $TMPDIR" EXIT
+
+
+ssh_exec()
+{
+    ssh -S $TMPDIR/socket "$@"
+}
+
+
+copy_authorized_keys()
+{
+inotifywait $TMPDIR
+
+REMOTE_TMP=$(ssh_exec $REMOTE_TARGET mktemp -d)
+APPEND_TO_AUTHORIZED_KEYS=$REMOTE_TMP/append_to_authorized_keys
+
+ssh_exec $REMOTE_TARGET dd of=$APPEND_TO_AUTHORIZED_KEYS<< DELIMITER
+#!/bin/sh
+set -e
+mkdir -p ~/.ssh
+echo "$(cat $SOURCE)">>~/.ssh/authorized_keys
+DELIMITER
+# rm -r $REMOTE_TMP
+ssh_exec $REMOTE_TARGET chmod +x $APPEND_TO_AUTHORIZED_KEYS
+ssh_exec -t $REMOTE_TARGET su --command $APPEND_TO_AUTHORIZED_KEYS<$1
+
+kill $$
+}
+
+SUS_TTY=$(tty)
+# trap exit TERM
+copy_authorized_keys $SUS_TTY&
+ssh_exec -M -N $REMOTE_TARGET
