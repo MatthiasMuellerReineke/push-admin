@@ -46,8 +46,8 @@ ssh_exec $REMOTE_TARGET dd of=$APPEND_TO_AUTHORIZED_KEYS<< DELIMITER
 set -e
 mkdir -p ~/.ssh
 echo "$(cat $SOURCE)">>~/.ssh/authorized_keys
+rm -r $REMOTE_TMP
 DELIMITER
-# rm -r $REMOTE_TMP
 ssh_exec $REMOTE_TARGET chmod +x $APPEND_TO_AUTHORIZED_KEYS
 ssh_exec -t $REMOTE_TARGET su --command $APPEND_TO_AUTHORIZED_KEYS<$1
 
