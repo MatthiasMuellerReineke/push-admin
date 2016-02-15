@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/zsh
 
 # Copyright (C) 2011  Matthias Müller-Reineke
 
@@ -22,16 +22,21 @@ REMOTE_TARGET=$2
 TMPDIR=$(mktemp -d)
 trap "rm -r $TMPDIR" EXIT
 
+MASTER_PID=$TMPDIR/master_pid
 
+SSH_SOCKET=$TMPDIR/socket
 ssh_exec()
 {
-    ssh -S $TMPDIR/socket "$@"
+    ssh -S $SSH_SOCKET "$@"
 }
 
 
 copy_authorized_keys()
 {
-inotifywait $TMPDIR
+while ! [[ -a $SSH_SOCKET ]]
+do
+    inotifywait $TMPDIR
+done
 
 REMOTE_TMP=$(ssh_exec $REMOTE_TARGET mktemp -d)
 APPEND_TO_AUTHORIZED_KEYS=$REMOTE_TMP/append_to_authorized_keys
@@ -46,10 +51,11 @@ DELIMITER
 ssh_exec $REMOTE_TARGET chmod +x $APPEND_TO_AUTHORIZED_KEYS
 ssh_exec -t $REMOTE_TARGET su --command $APPEND_TO_AUTHORIZED_KEYS<$1
 
-kill $$
+kill -TERM $(cat $MASTER_PID)
 }
 
 SUS_TTY=$(tty)
-# trap exit TERM
 copy_authorized_keys $SUS_TTY&
-ssh_exec -M -N $REMOTE_TARGET
+ssh_exec -M -N $REMOTE_TARGET<$SUS_TTY &
+echo $! >$MASTER_PID
+wait
