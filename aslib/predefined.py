@@ -60,7 +60,7 @@ def sudoersd_user_entry(user_name, sudoers_permission_description):
 
 
 def crond_entry_with_extended_path(file_name, content):
-    return crond_entry(file_name, 'PATH=/{0}:/usr/bin:/bin\n{1}'
+    return crond_entry(file_name, 'PATH=/{0}:/usr/sbin:/usr/bin:/bin\n{1}'
                                   .format(script_dir, content))
 
 
