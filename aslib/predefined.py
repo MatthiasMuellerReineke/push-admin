@@ -769,7 +769,7 @@ class All(ClassOfSystems):
             self.ssh_master_socket = ssh_master_socket
             fd = inotifyx.init()
             try:
-                wd = inotifyx.add_watch(fd, ssh_master_socket_dir)
+                inotifyx.add_watch(fd, ssh_master_socket_dir)
                 self.master_openssh = master_openssh = self.openssh(
                         ['-M', '-N']
                         + remote_authorized_key_env(),
