@@ -22,5 +22,7 @@ set -x
 . common
 
 NAME=$1
-echo $NAME $(cat $(arc_dir $NAME)/ssh_host_rsa_key.pub)\
-        >>trees/All/etc/ssh/ssh_known_hosts
+for FILE in $(arc_dir $NAME)/ssh_host_*_key.pub
+do
+    echo $NAME $(cat $FILE)>>trees/All/etc/ssh/ssh_known_hosts
+done
