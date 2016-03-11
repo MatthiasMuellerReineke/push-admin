@@ -44,7 +44,8 @@ from aslib.predefined import All, Override, Offline, El,\
          FileNameCollision, MakeExecutable, MakeOwnedRecursivelyBy,\
          Debianish, DontTouch, hosts_with_class,\
          in_rcd_initd, link_in_same_dir, dir_of_tree,\
-         NotSubclassOfFromExaminationOfSystem, FromExaminationOfSystem
+         NotSubclassOfFromExaminationOfSystem, FromExaminationOfSystem,\
+         call_object_attr, AttributeErrorInCallable
 from aslib import remote_exec
 from aslib import predefined
 
@@ -718,6 +719,16 @@ class TestSimple(unittest.TestCase):
         self.assertRaises(AttributeError,
                 lambda: non_existent_centos(RunModeClassDummy)
                 .search.this_method_doesnt_exist)
+
+    def test_call_object_attr(self):
+        class WithCallableWhichRaises:
+            def access_non_existing_attr(self):
+                self.non_existing_attr
+        # XXX: Unfortunately the StringIO can't be checked together with
+        # the exception:
+        self.assertRaises(AttributeErrorInCallable, call_object_attr,
+                WithCallableWhichRaises(), 'access_non_existing_attr',
+                StringIO())
 
     def test_derived_non_existent_centos(self):
         self.assertEqual(derived_non_existent_centos().generated_files(),

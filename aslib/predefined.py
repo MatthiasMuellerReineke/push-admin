@@ -18,6 +18,7 @@
 
 from __future__ import print_function
 
+import traceback
 import os
 from os import rmdir, walk, remove, getcwd, rename, environ
 import socket
@@ -922,10 +923,27 @@ class CallClassAttr:
             return attr
 
 
-def call_object_attr(obj, attr_name):
+class AttributeErrorInCallable(Exception):
+    pass
+
+
+def call_object_attr(obj, attr_name, file=None):
+    # If obj doesn't have the desired attribute, the following instruction
+    # will raise an AttributeError. According to
+    # http://jinja.pocoo.org/docs/dev/templates/#variables
+    # '' is inserted for an affected template variable. This is desired.
     attr = getattr(obj, attr_name)
     if callable(attr):
-        return attr()
+        try:
+            return attr()
+        except AttributeError:
+            # Without converting the AttributeError, this case would fail
+            # silently - the template variable would be substituted with
+            # ''. That usually isn't intended because AttributeErrors
+            # during function execution are programming errors. This kind
+            # of errors is reported:
+            traceback.print_exc(file=file)
+            raise AttributeErrorInCallable
     else:
         return attr
 
