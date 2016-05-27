@@ -18,6 +18,5 @@
 
 set -e
 HOST=$1
-SRC=$2
 . common
-ssh_exec $HOST cat $SRC
+ssh_exec $HOST cat "'$2'"
