@@ -166,7 +166,14 @@ DVD_VERSION_INFO=$WORKING_COPY/dvd_version_info
 (cd $PROJEKT_DIR&&mk_ks_cfg $WORKING_COPY $ISOIMAGE)
 echo "\n\n$0 parameter:\n$@">>$DVD_VERSION_INFO
 
-genisoimage -b isolinux/isolinux.bin -no-emul-boot -c isolinux/boot.cat -boot-load-size 4 -boot-info-table -V Scientific-7.1-x86_64 -J -R -v -T -o $ISO_NEW working_copy
+# Something like SL-7.2-DVD-x86_64-2016-02-02.iso
+VERSION=$(basename $ISOIMAGE)
+VERSION=${VERSION#*-} # Remove 'SL-'
+VERSION=${VERSION%%-*} # Remove '-DVD-x86_64-2016-02-02.iso
+
+genisoimage -b isolinux/isolinux.bin -no-emul-boot -c isolinux/boot.cat\
+    -boot-load-size 4 -boot-info-table -V Scientific-$VERSION-x86_64\
+    -J -R -v -T -o $ISO_NEW working_copy
 
 implantisomd5 --supported-iso $ISO_NEW
 
