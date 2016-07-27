@@ -357,10 +357,18 @@ class El(FromExaminationOfSystem, QueryPackagesMixin):
         system_object = self.system_object
         return [(in_postinst_d('10generated'), '#!/bin/bash\n'
                 'set -ex\nyum update -y\n'
-                + '\n'.join(system_object.packages_cmd().all_commands()
+                + '\n'.join(map(in_subshell_if_required,
+                    system_object.packages_cmd().all_commands()
                     + system_object.post_overlay_commands()
-                    + system_object.post_inst())
+                    + system_object.post_inst()))
                 + '\n', MakeExecutable)]
+
+
+def in_subshell_if_required(cmd):
+    if '&&' in cmd:
+        return '({})'.format(cmd)
+    else:
+        return cmd
 
 
 class HasServiceIsOff:
