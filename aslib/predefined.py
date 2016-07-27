@@ -356,7 +356,7 @@ class El(FromExaminationOfSystem, QueryPackagesMixin):
     def files(self):
         system_object = self.system_object
         return [(in_postinst_d('10generated'), '#!/bin/bash\n'
-                'set -ex\nyum update -y\n'
+                'set -ex\nyum update -y\nyum clean all\n'
                 + '\n'.join(map(in_subshell_if_required,
                     system_object.packages_cmd().all_commands()
                     + system_object.post_overlay_commands()
