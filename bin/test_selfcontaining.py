@@ -27,6 +27,7 @@ from time import sleep
 from subprocess import CalledProcessError, Popen
 from os.path import join, lexists, isdir
 from cStringIO import StringIO
+import re
 import unittest
 
 from aslib.utilities import tunix, write, memoize, ensure_contains,\
@@ -679,7 +680,8 @@ class TestSimple(unittest.TestCase):
         class AllDerived(All):
             users = [('user_a', 'user_as_group'),
                      ('user_b', 'user_bs_group')]
-        self.assertEqual([x.split()[0] for x in sum(
+        s = re.compile('(useradd|usermod) ')
+        self.assertEqual([s.search(x).groups()[0] for x in sum(
                     [c.all_commands() for c in
                      instantiate_init_noname(AllDerived).users_cmds()], [])
                 ], ['useradd', 'useradd', 'usermod', 'usermod'])

@@ -222,7 +222,9 @@ class User(UsersBase):
            user's home directory may be created by an overlay and thus
            be owned by root.
         """
-        return 'useradd --create-home {0}&&{1}'.format(
+        # 9: "username already in use"
+        return 'set +e;useradd --create-home {0};'\
+               'RET=$?;([ $RET = 0 ]||[ $RET = 9 ])&&{1}'.format(
                 user_name, chown_user_home_dir_cmd(user_name))
 
 

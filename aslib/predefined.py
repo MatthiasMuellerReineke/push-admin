@@ -355,6 +355,7 @@ class El(FromExaminationOfSystem, QueryPackagesMixin):
 
     def files(self):
         system_object = self.system_object
+        # Be careful: Some commands rely on being executed in a subshell!
         return [(in_postinst_d('10generated'), '#!/bin/bash\n'
                 'set -ex\nyum update -y\nyum clean all\n'
                 + '\n'.join(map(in_subshell_if_required,
