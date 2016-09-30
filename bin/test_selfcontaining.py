@@ -46,7 +46,7 @@ from aslib.predefined import All, Override, Offline, El,\
          Debianish, DontTouch, hosts_with_class,\
          in_rcd_initd, link_in_same_dir, dir_of_tree,\
          NotSubclassOfFromExaminationOfSystem, FromExaminationOfSystem,\
-         call_object_attr, AttributeErrorInCallable
+         call_object_attr, AttributeErrorInCallable, ClassOfSystems
 from aslib import remote_exec
 from aslib import predefined
 
@@ -625,6 +625,12 @@ class TestSimple(unittest.TestCase):
         self.assertTrue(shall_i_process_host('El',
                     non_existent_centos(RunModeClassDummy)))
 
+    def test_is_wanted(self):
+        test_is_wanted(self.assertTrue)
+
+    def test_is_not_wanted(self):
+        test_is_wanted(self.assertFalse, '!Usual')
+
     def test_hosts_with_class(self):
         class B(All):
             pass
@@ -843,6 +849,21 @@ def test_shall_i_process_host(assert_func, opt_limit,
         positive_class='CentOS'):
     assert_func(shall_i_process_host(positive_class + opt_limit,
                 non_existent_centos_runmodemock()))
+
+
+def test_is_wanted(assert_func, opt_limit=''):
+    class Usual(Override):
+        pass
+    def local_get_conf_attr(name):
+        if name == 'Usual':
+            return Usual
+        else:
+            return get_conf_attr(name)
+    s = RootIsLocal(Usual)
+    s.init(distribution_centos, OptionsClassDummy, local_get_conf_attr)
+    assert s.issubclass('CentOS', ClassOfSystems)
+    assert s.issubclass('Usual', ClassOfSystems)
+    assert_func(s.is_wanted('CentOS' + opt_limit))
 
 
 def get_distribution_classes_empty(get_remote):
