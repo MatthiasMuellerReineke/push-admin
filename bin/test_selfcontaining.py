@@ -580,66 +580,6 @@ class TestSimple(unittest.TestCase):
                 lambda get_remote: [class_from_examination_of_system])
         s.override_instances_from_examination_of_system()
 
-    def test_default_all_dont_touch(self):
-        test_shall_i_process_host_dont_touch(self.assertFalse,
-                DefaultAll())
-
-    def test_shall_i_process_host_count_instances(self):
-        class All(predefined.All):
-            instance_count = 0
-        class CountsOnHostobject(Override):
-            def __init__(self, system_object):
-                Override.__init__(self, system_object)
-                system_object.instance_count += 1
-
-        s = All(non_existent, CountsOnHostobject)
-        d = locals()
-        s.init(get_distribution_classes_empty, OptionsClassDummy,
-                lambda x: d[x])
-        predefined.ShallIProcessHost(locals())('CountsOnHostobject', s)
-        self.assertEqual(s.instance_count, 1)
-
-    def test_shall_i_process_host_dont_touch(self):
-        # shall_i_process_host/ShallIProcessHost is used by
-        # distribute_command; distribute_command shall ignore DontTouch.
-        test_shall_i_process_host_dont_touch(self.assertTrue,
-                shall_i_process_host)
-
-    def test_shall_i_process_host_centos(self):
-        test_shall_i_process_host(self.assertTrue, '')
-
-    def test_shall_i_process_host_centos_not_el(self):
-        test_shall_i_process_host(self.assertFalse, '!El')
-
-    def test_shall_i_process_host_centos_not_e(self):
-        test_shall_i_process_host(self.assertTrue, '!E')
-
-    def test_shall_i_process_host_xyz_not_e(self):
-        # CentOS mustn't be processed when Debian is requested.
-        test_shall_i_process_host(self.assertFalse, '!E', 'Debian')
-
-    def test_shall_i_process_host(self):
-        self.assertFalse(shall_i_process_host('a', All(non_existent)))
-
-    def test_shall_i_process_host_el(self):
-        self.assertTrue(shall_i_process_host('El',
-                    non_existent_centos(RunModeClassDummy)))
-
-    def test_is_wanted(self):
-        test_is_wanted(self.assertTrue)
-
-    def test_is_not_wanted(self):
-        test_is_wanted(self.assertFalse, '!Usual')
-
-    def test_hosts_with_class(self):
-        class B(All):
-            pass
-        name_of_system_of_desired_class = 'Desired'
-        hosts = [All('a'), B(name_of_system_of_desired_class)]
-        map(system_object_init, hosts)
-        self.assertEqual(hosts_with_class('B', {'hosts': hosts, 'B': B}),
-                [name_of_system_of_desired_class])
-
     def test_dry_run_rcmd_takes_all_parameters(self):
         class CommandStub:
             def output_catcher(self):
@@ -849,6 +789,68 @@ def test_shall_i_process_host(assert_func, opt_limit,
         positive_class='CentOS'):
     assert_func(shall_i_process_host(positive_class + opt_limit,
                 non_existent_centos_runmodemock()))
+
+
+class TestShallIProcessHost(unittest.TestCase):
+    def test_default_all_dont_touch(self):
+        test_shall_i_process_host_dont_touch(self.assertFalse,
+                DefaultAll())
+
+    def test_shall_i_process_host_count_instances(self):
+        class All(predefined.All):
+            instance_count = 0
+        class CountsOnHostobject(Override):
+            def __init__(self, system_object):
+                Override.__init__(self, system_object)
+                system_object.instance_count += 1
+
+        s = All(non_existent, CountsOnHostobject)
+        d = locals()
+        s.init(get_distribution_classes_empty, OptionsClassDummy,
+                lambda x: d[x])
+        predefined.ShallIProcessHost(locals())('CountsOnHostobject', s)
+        self.assertEqual(s.instance_count, 1)
+
+    def test_shall_i_process_host_dont_touch(self):
+        # shall_i_process_host/ShallIProcessHost is used by
+        # distribute_command; distribute_command shall ignore DontTouch.
+        test_shall_i_process_host_dont_touch(self.assertTrue,
+                shall_i_process_host)
+
+    def test_shall_i_process_host_centos(self):
+        test_shall_i_process_host(self.assertTrue, '')
+
+    def test_shall_i_process_host_centos_not_el(self):
+        test_shall_i_process_host(self.assertFalse, '!El')
+
+    def test_shall_i_process_host_centos_not_e(self):
+        test_shall_i_process_host(self.assertTrue, '!E')
+
+    def test_shall_i_process_host_xyz_not_e(self):
+        # CentOS mustn't be processed when Debian is requested.
+        test_shall_i_process_host(self.assertFalse, '!E', 'Debian')
+
+    def test_shall_i_process_host(self):
+        self.assertFalse(shall_i_process_host('a', All(non_existent)))
+
+    def test_shall_i_process_host_el(self):
+        self.assertTrue(shall_i_process_host('El',
+                    non_existent_centos(RunModeClassDummy)))
+
+    def test_is_wanted(self):
+        test_is_wanted(self.assertTrue)
+
+    def test_is_not_wanted(self):
+        test_is_wanted(self.assertFalse, '!Usual')
+
+    def test_hosts_with_class(self):
+        class B(All):
+            pass
+        name_of_system_of_desired_class = 'Desired'
+        hosts = [All('a'), B(name_of_system_of_desired_class)]
+        map(system_object_init, hosts)
+        self.assertEqual(hosts_with_class('B', {'hosts': hosts, 'B': B}),
+                [name_of_system_of_desired_class])
 
 
 def test_is_wanted(assert_func, opt_limit=''):
