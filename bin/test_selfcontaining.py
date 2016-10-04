@@ -837,11 +837,21 @@ class TestShallIProcessHost(unittest.TestCase):
         self.assertTrue(shall_i_process_host('El',
                     non_existent_centos(RunModeClassDummy)))
 
+    def test_shall_i_process_host_centos_not_usual(self):
+        test_is_wanted(self.assertFalse, '!Usual',
+                lambda s, selection, module:
+                predefined.ShallIProcessHost(module)
+                (selection, s))
+
     def test_is_wanted(self):
         test_is_wanted(self.assertTrue)
 
     def test_is_not_wanted(self):
         test_is_wanted(self.assertFalse, '!Usual')
+
+    def test_xyz_is_not_wanted(self):
+        test_is_wanted(self.assertFalse, '!Usual', distribution='Debian',
+                system_classes=())
 
     def test_hosts_with_class(self):
         class B(All):
@@ -853,19 +863,32 @@ class TestShallIProcessHost(unittest.TestCase):
                 [name_of_system_of_desired_class])
 
 
-def test_is_wanted(assert_func, opt_limit=''):
-    class Usual(Override):
-        pass
+class Usual(Override):
+    pass
+
+
+def test_is_wanted(assert_func, opt_limit='',
+        call_on_s=lambda s, selection, module:
+        s.is_wanted(selection),
+        distribution='CentOS', system_classes=(Usual,)):
     def local_get_conf_attr(name):
-        if name == 'Usual':
-            return Usual
-        else:
-            return get_conf_attr(name)
-    s = RootIsLocal(Usual)
+        return mm[name]
+
+    class MuduleMok:
+        def __getitem__(self, name):
+            try:
+                return get_conf_attr(name)
+            except KeyError:
+                if name == 'Usual':
+                    return Usual
+                else:
+                    raise
+    mm = MuduleMok()
+    s = RootIsLocal(*system_classes)
     s.init(distribution_centos, OptionsClassDummy, local_get_conf_attr)
     assert s.issubclass('CentOS', ClassOfSystems)
     assert s.issubclass('Usual', ClassOfSystems)
-    assert_func(s.is_wanted('CentOS' + opt_limit))
+    assert_func(call_on_s(s, distribution + opt_limit, mm))
 
 
 def get_distribution_classes_empty(get_remote):

@@ -709,7 +709,7 @@ class All(ClassOfSystems):
             class_names = self.class_names_from_override_instances()
         not_wanted = filter(lambda nw: self.issubclass(nw, ClassOfSystems),
                 description_split[1:])
-        return (description_split[0] in class_names or not_wanted
+        return (description_split[0] in class_names
                ) and set(not_wanted).isdisjoint(class_names)
 
     def issubclass(self, name, klass):
