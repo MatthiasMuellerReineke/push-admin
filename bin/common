@@ -38,6 +38,11 @@ remote_cp_1st_to_2nd()
 
 DEFAULT_REMOTE_TARGET=$1
 
+accumulate_default()
+{
+    accumulate $DEFAULT_REMOTE_TARGET "$@"
+}
+
 ssh_exec_default()
 {
     ssh_exec $DEFAULT_REMOTE_TARGET "$@"
