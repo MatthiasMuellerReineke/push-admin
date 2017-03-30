@@ -240,9 +240,9 @@ class ClassOfSystems(object):
             if hasattr(c, 'add_supers'):
                 c.add_supers(c, classes)
 
-    def template_entry_munin_plugin(self, name):
+    def template_entry_munin_plugin(self, name, **kwargs):
         return self.template_entry_executable(
-                join('etc/munin/plugins', name))
+                join('etc/munin/plugins', name), **kwargs)
 
     def template_entry_executable(self, dest_file_name, **kwargs):
         return self.template_entry(dest_file_name, **kwargs)\
