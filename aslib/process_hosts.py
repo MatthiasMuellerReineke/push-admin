@@ -325,11 +325,10 @@ def execute_action_on_selected_hosts(action, parser, metavar=None,
     process_relevant_hosts(ShallIProcessHost(), action, parser)
 
 
-distribute_parent_parser = ArgumentParser(add_help=False)
-distribute_parent_parser.add_argument('--skip', default='')
-object_from_option(distribute_parent_parser, 'dry-run', DryRun, RealRun,
+distribute_parser = ArgumentParser()
+distribute_parser.add_argument('--skip', default='')
+object_from_option(distribute_parser, 'dry-run', DryRun, RealRun,
         'run_mode')
-distribute_parser = ArgumentParser(parents=[distribute_parent_parser])
 
 
 def add_mandatory_host_specification(parser):
