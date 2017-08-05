@@ -221,6 +221,7 @@ def process_ready_files(all_selectables, always_ready, *timeout):
     ready_for_reading, w, e = select.select(all_selectables,
             [], [], *timeout)
     assert not w
+    assert not e
     for r in ready_for_reading + [o for o in always_ready if not o.eof]:
         r.process()
 
