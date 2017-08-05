@@ -31,7 +31,7 @@ from difflib import unified_diff
 from utilities import object_from_option, colored, tunix,\
          write, file_content, mkdir_p, stat_mode
 
-from remote_exec import ForwardToStd, FileWrapper
+from remote_exec import ForwardToStd
 import os_objects
 import predefined
 # TODO: Alles, was hier importiert wird, sollte von predefined in
@@ -211,7 +211,7 @@ def classes_from_examination_of_running_system(system_object):
     return classes_from_names(pretty_name.splitlines()[0].split()) + [
             get_conf_attr_from_str0(system_object.ssh_silent_stdout(
                         '/usr/bin/perl',
-                        remotes_stdin=FileWrapper(open(join(package, 'imvirt')))))
+                        remotes_stdin=open(join(package, 'imvirt'))))
            ]
 
 

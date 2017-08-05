@@ -41,8 +41,7 @@ from utilities import memoized, memoize,\
          ensure_contains, tunix
 from remote_exec import ForwardToStd, CatchStdout,\
          CatchStdoutCatcherStderrMsg,\
-         communicate_with_child,\
-         StdinWrapper
+         communicate_with_child
 from os_objects import Packages, User, UsersGroups, Group,\
          Service, Link, Directory, Files,\
          commands_from_instances, SimpleConditionalCommand,\
@@ -752,19 +751,19 @@ class All(ClassOfSystems):
                 raise
         return (getent_entry, missing)
 
-    def ssh_silent_stdout(self, cmd, remotes_stdin=StdinWrapper()):
+    def ssh_silent_stdout(self, cmd, remotes_stdin=None):
         c = CatchStdout()
         self.ssh_silent(cmd, c, remotes_stdin)
         return c.stdout.rstrip('\n')
 
     def ssh_silent(self, cmd, output_catcher=ForwardToStd(),
-                   remotes_stdin=StdinWrapper()):
+                   remotes_stdin=None):
         """'silent' means that 'Connection to ... closed.' is suppressed.
         Other output becomes visible except it is caught."""
         self.ssh(cmd, output_catcher, remotes_stdin)
 
     def ssh(self, cmd, output_catcher=ForwardToStd(),
-            remotes_stdin=StdinWrapper()):
+            remotes_stdin=None):
         if not cmd:
             # XXX: Where do these empty commands come from?
             return
@@ -800,9 +799,9 @@ class All(ClassOfSystems):
             finally:
                 os.close(fd)
         cmd_openssh = self.openssh(output_catcher.allocate_tty, [cmd],
-                remotes_stdin.remotes_stdin, output_catcher.remotes_stdout,
+                remotes_stdin, output_catcher.remotes_stdout,
                 output_catcher.remotes_stdout)
-        communicate_with_child(cmd_openssh, output_catcher, remotes_stdin,
+        communicate_with_child(cmd_openssh, output_catcher,
                 assert_master_openssh_running, cmd)
 
     def filter_masters_stderr(self, master_sshs_stderr):

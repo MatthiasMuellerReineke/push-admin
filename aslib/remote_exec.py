@@ -121,59 +121,20 @@ class CatchStdoutCatcherStderrMsg(CatchStdout, CatcherStderrMsg):
         CatcherStderrMsg.__init__(self, msg)
 
 
-class SelectableWrapper:
-    eof = False
-
-    def __getattr__(self, name):
-        return getattr(self.selectable, name)
-
-
-class FileWrapper(SelectableWrapper):
-    """
-    This forwards a file's content to the remote program via ssh.
-    """
-
-    def __init__(self, f):
-        self.selectable = f
-        self.remotes_stdin = PIPE
-
-    def process(self):
-        self.chan.write(self.selectable.read())
-        self.chan.close()
-        self.eof = True
-
-    def append_to_always_ready(self, always_ready):
-        always_ready.append(self)
-
-    def append_to_selectables(self, all_selectables):
-        pass
-
-
-class StdinWrapper(SelectableWrapper):
-    selectable = stdin
-    remotes_stdin = PIPE
-
-    def process(self):
-        r = stdin.read()
-        if r:
-            self.chan.write(r)
-
-    def append_to_always_ready(self, always_ready):
-        pass
-
-    def append_to_selectables(self, all_selectables):
-        all_selectables.append(self)
-
-
-class StdWrapper(SelectableWrapper):
+class StdWrapper:
     """
     This recives remote program's output.
     """
+
+    eof = False
 
     def __init__(self, chan, output_catcher, take):
         self.selectable = chan
         self.output_catcher = output_catcher
         self.take = take
+
+    def __getattr__(self, name):
+        return getattr(self.selectable, name)
 
     def process(self):
         out = self.selectable.read()
@@ -183,7 +144,7 @@ class StdWrapper(SelectableWrapper):
         return self.selectable.fileno()
 
 
-def communicate_with_child(process, output_catcher, remotes_stdin,
+def communicate_with_child(process, output_catcher,
         assert_condition, cmd):
     peculiarities = output_catcher.peculiarities()
 
@@ -194,9 +155,6 @@ def communicate_with_child(process, output_catcher, remotes_stdin,
                 output_catcher.take_stderr),
         ]
     always_ready = []
-    remotes_stdin.chan = process.stdin
-    remotes_stdin.append_to_always_ready(always_ready)
-    remotes_stdin.append_to_selectables(all_selectables)
     peculiarities.save_settings()
     try:
         peculiarities.manipulate_settings()
