@@ -223,7 +223,6 @@ def process_ready_files(all_selectables, always_ready, *timeout):
     assert(not w)
     for r in ready_for_reading + [o for o in always_ready if not o.eof]:
         r.process()
-    return ready_for_reading
 
 
 class NoTty:
