@@ -42,7 +42,7 @@ from utilities import memoized, memoize,\
 from remote_exec import ForwardToStd, CatchStdout,\
          CatchStdoutCatcherStderrMsg,\
          communicate_with_child,\
-         StdWrapper, StdinWrapper, process_ready_files
+         StdinWrapper
 from os_objects import Packages, User, UsersGroups, Group,\
          Service, Link, Directory, Files,\
          commands_from_instances, SimpleConditionalCommand,\
