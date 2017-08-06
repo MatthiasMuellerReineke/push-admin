@@ -268,7 +268,8 @@ class TestCentosReal(TestCentos, unittest.TestCase):
 
     def test_ssh_silent_stdout_longlines(self):
         def insert_many(s):
-            return s.format(50 * 'A', 50 * 'B', 50 * 'C')
+            count = 500
+            return s.format(count * 'A', count * 'B', count * 'C')
         self.ssh_silent_stdout(insert_many('echo {0};echo {1};echo {2}'),
                insert_many('{0}\n{1}\n{2}'))
 
