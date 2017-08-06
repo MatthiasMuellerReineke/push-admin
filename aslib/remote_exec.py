@@ -157,7 +157,6 @@ def communicate_with_child(process, output_catcher,
     peculiarities.save_settings()
     try:
         peculiarities.manipulate_settings()
-        exit_code = None
         while True:
             process_ready_files(all_selectables)
             assert_condition()
