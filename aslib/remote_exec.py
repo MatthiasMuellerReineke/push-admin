@@ -171,9 +171,8 @@ def communicate_with_child(process, output_catcher,
         peculiarities.reset_settings()
 
 
-def process_ready_files(all_selectables, *timeout):
-    ready_for_reading, w, e = select.select(all_selectables,
-            [], [], *timeout)
+def process_ready_files(all_selectables):
+    ready_for_reading, w, e = select.select(all_selectables, [], [])
     assert not w
     assert not e
     for r in ready_for_reading:
