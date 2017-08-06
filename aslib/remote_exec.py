@@ -154,33 +154,29 @@ def communicate_with_child(process, output_catcher,
             StdWrapper(process.stderr, output_catcher,
                 output_catcher.take_stderr),
         ]
-    always_ready = []
     peculiarities.save_settings()
     try:
         peculiarities.manipulate_settings()
         exit_code = None
         while True:
-            if any([not o.eof for o in always_ready]):
-                process_ready_files(all_selectables, always_ready, 0)
-            else:
-                process_ready_files(all_selectables, always_ready)
+            process_ready_files(all_selectables)
             assert_condition()
             exit_code = process.poll()
             if exit_code:
                 raise CalledProcessError(exit_code, cmd)
             if exit_code == 0:
-                process_ready_files(all_selectables, always_ready)
+                process_ready_files(all_selectables)
                 break
     finally:
         peculiarities.reset_settings()
 
 
-def process_ready_files(all_selectables, always_ready, *timeout):
+def process_ready_files(all_selectables, *timeout):
     ready_for_reading, w, e = select.select(all_selectables,
             [], [], *timeout)
     assert not w
     assert not e
-    for r in ready_for_reading + [o for o in always_ready if not o.eof]:
+    for r in ready_for_reading:
         r.process()
 
 
