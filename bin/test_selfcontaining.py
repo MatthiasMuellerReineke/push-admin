@@ -716,7 +716,7 @@ class TestSimple(unittest.TestCase):
 
     def test_forward_to_standard(self):
         class HasRead:
-            def read(self):
+            def read(self, *args):
                 return ''
 
         class HasPrintDest:

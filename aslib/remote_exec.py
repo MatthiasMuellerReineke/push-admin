@@ -136,8 +136,8 @@ class StdWrapper:
     def __getattr__(self, name):
         return getattr(self.selectable, name)
 
-    def process(self):
-        out = self.selectable.read()
+    def process(self, read_size=-1):
+        out = self.selectable.read(read_size)
         self.take(out, self.output_catcher.peculiarities())
 
     def fileno(self):
@@ -156,26 +156,25 @@ def communicate_with_child(process, output_catcher,
         ]
     peculiarities.save_settings()
     try:
-        peculiarities.manipulate_settings()
         while True:
-            process_ready_files(all_selectables)
+            process_ready_files(all_selectables, 1)
             assert_condition()
             exit_code = process.poll()
             if exit_code:
                 raise CalledProcessError(exit_code, cmd)
             if exit_code == 0:
-                process_ready_files(all_selectables)
+                process_ready_files(all_selectables, -1)
                 break
     finally:
         peculiarities.reset_settings()
 
 
-def process_ready_files(all_selectables):
+def process_ready_files(all_selectables, read_size):
     ready_for_reading, w, e = select.select(all_selectables, [], [])
     assert not w
     assert not e
     for r in ready_for_reading:
-        r.process()
+        r.process(read_size)
 
 
 class NoTty:
