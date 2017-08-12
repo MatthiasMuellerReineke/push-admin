@@ -1,0 +1,4 @@
+etc/bashzshrc
+etc/ssh/ssh_known_hosts
+etc/zsh/zshrc
+usr/local/postinst.d/10generated
