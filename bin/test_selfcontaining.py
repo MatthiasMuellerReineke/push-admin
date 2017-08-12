@@ -735,10 +735,36 @@ class TestSimple(unittest.TestCase):
 
     def test_communicate_with_child(self):
         test_val = 'A'
-        output_catcher = CatchStdout()
-        communicate_with_child(Popen(['echo', '-n', test_val],
-            stdout=output_catcher.remotes_stdout,
-            stderr=PIPE),
+        self.execute_communicate_with_child(test_val,
+                None, CatchStdout(),
+                'echo', '-n', test_val)
+
+    def test_interaction_communicate_with_child(self):
+        test_val = 'xyz'
+
+        class Interact(remote_exec.ForwardToStd):
+            stdout = ''
+            remotes_stdin_is_waiting = True
+
+            def take_stdout(self, s, peculiarities):
+                self.stdout += s
+                if self.stdout == test_val\
+                   and self.remotes_stdin_is_waiting:
+                    self.remotes_stdin_is_waiting = False
+                    remotes_stdin = self.p.stdin
+                    remotes_stdin.write('\n')
+                    remotes_stdin.flush()
+
+        self.execute_communicate_with_child(test_val, PIPE, Interact(),
+                'bash', '-c', 'echo -n {} && read'.format(test_val))
+
+    def execute_communicate_with_child(self, test_val, remotes_stdin,
+            output_catcher, *popen_args):
+        p = Popen(popen_args, stdin=remotes_stdin,
+                stdout=output_catcher.remotes_stdout,
+                stderr=PIPE)
+        output_catcher.p = p
+        communicate_with_child(p,
             output_catcher, tunix, None)
         self.assertEqual(output_catcher.stdout, test_val)
 
