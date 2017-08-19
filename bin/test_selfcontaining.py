@@ -470,31 +470,6 @@ class TestSimple(unittest.TestCase):
 
         self.assertEqual(stat_mode(join(s.remote_root(), f_name)), mode)
 
-    def test_new_file_in_nonexisting_dir(self):
-        non_existent_centos(RealRun).store_remote('a/b', 'c')
-
-    def test_avoid_superfluous_update(self):
-        def store_remote():
-            s.store_remote(f_name, 'content')
-        def call_stat():
-            return stat(join(s.remote_root(), f_name))
-        s = non_existent_centos(RealRun)
-        f_name = 'f_name'
-        store_remote()
-        st1 = call_stat()
-        sleep(1)
-        store_remote()
-        st2 = call_stat()
-        self.assertEqual(st1.st_ctime, st2.st_ctime)
-
-    def test_generated_files_are_stored_remote(self):
-        remote_name = 'c/d/e'
-        remote_content = 'store_remote test'
-        self.assertEqual(run_all_root_is_local(
-                    file_parts_class(Override, remote_name, remote_content)
-                    ).stored_remote,
-                [(remote_name, remote_content + '\n')])
-
     def test_generated(self):
         remote_name = 'y'
         FP1 = file_parts_class(Override, remote_name, 'c1')
@@ -812,6 +787,34 @@ def test_shall_i_process_host(assert_func, opt_limit,
         positive_class='CentOS'):
     assert_func(shall_i_process_host(positive_class + opt_limit,
                 non_existent_centos_runmodemock()))
+
+
+class TestRealRunStoreRemote(test_util.TestReplaceLibAttr):
+    def test_new_file_in_nonexisting_dir(self):
+        non_existent_centos(RealRun).store_remote('a/b', 'c')
+
+    def test_avoid_superfluous_update(self):
+        class CountCalls:
+            count = 0
+            def __call__(self, *args):
+                self.count += 1
+        def store_remote():
+            s.store_remote(f_name, 'content')
+        s = non_existent_centos(RealRun)
+        f_name = 'f_name'
+        store_remote()
+        count_write_calls = CountCalls()
+        self.manipulate_module(process_hosts, 'write', count_write_calls)
+        store_remote()
+        self.assertFalse(count_write_calls.count)
+
+    def test_generated_files_are_stored_remote(self):
+        remote_name = 'c/d/e'
+        remote_content = 'store_remote test'
+        self.assertEqual(run_all_root_is_local(
+                    file_parts_class(Override, remote_name, remote_content)
+                    ).stored_remote,
+                [(remote_name, remote_content + '\n')])
 
 
 class TestShallIProcessHost(unittest.TestCase):
